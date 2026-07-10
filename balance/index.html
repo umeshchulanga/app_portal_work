@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Revenue Calculator — Revenue Licence Section</title>
+<style>
+:root{
+  --parchment:#f3ecd9;
+  --parchment-dark:#e8dfc4;
+  --navy:#1f2f45;
+  --navy-light:#2c4260;
+  --brass:#a8843c;
+  --brass-light:#c9a45c;
+  --maroon:#6e2732;
+  --maroon-light:#8a3542;
+  --ink:#2a2015;
+  --ink-soft:#5a4f3e;
+  --line:#c9bb95;
+  --paper-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 8px 24px rgba(31,47,69,.12);
+  --good:#3d6b4a;
+  --bad:#8a2f2f;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(168,132,60,.08), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, rgba(110,39,50,.06), transparent 55%),
+    var(--parchment);
+  background-attachment: fixed;
+  font-family: 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  color: var(--ink);
+  min-height:100vh;
+}
+.texture{
+  position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:0;
+  background-image: repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 3px);
+}
+.app{
+  position:relative; z-index:1;
+  max-width:1400px; margin:0 auto; padding:28px 22px 60px;
+}
+header.masthead{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  border-bottom: 3px double var(--navy);
+  padding-bottom:14px; margin-bottom:20px; gap:16px; flex-wrap:wrap;
+}
+.masthead-title h1{
+  margin:0; font-size:26px; letter-spacing:.5px; color:var(--navy);
+  font-weight:700;
+}
+.masthead-title .sub{
+  font-size:12.5px; color:var(--ink-soft); letter-spacing:1.5px; text-transform:uppercase;
+  margin-top:4px;
+}
+.file-controls{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.status-pill{
+  font-size:11.5px; padding:5px 10px; border-radius:999px; border:1px solid var(--line);
+  background:rgba(255,255,255,.5); color:var(--ink-soft); display:flex; align-items:center; gap:6px;
+}
+.status-dot{width:7px;height:7px;border-radius:50%; background:var(--brass);}
+.status-dot.ok{background:var(--good);}
+.status-dot.err{background:var(--bad);}
+button, .btn{
+  font-family: inherit; cursor:pointer; border:1px solid var(--navy);
+  background: var(--navy); color:var(--parchment); padding:8px 14px;
+  border-radius:3px; font-size:13px; letter-spacing:.3px; transition:.15s;
+}
+button:hover{background:var(--navy-light);}
+button.secondary{background:transparent; color:var(--navy);}
+button.secondary:hover{background:rgba(31,47,69,.07);}
+button.brass{background:var(--brass); border-color:var(--brass); color:#2a2015;}
+button.brass:hover{background:var(--brass-light);}
+button.maroon{background:var(--maroon); border-color:var(--maroon);}
+button.maroon:hover{background:var(--maroon-light);}
+button.small{padding:4px 9px; font-size:12px;}
+button:disabled{opacity:.4; cursor:not-allowed;}
+
+.layout{display:grid; grid-template-columns: 280px 1fr; gap:20px;}
+@media (max-width: 900px){ .layout{grid-template-columns: 1fr;} }
+
+.panel{
+  background: rgba(255,255,255,.55);
+  border:1px solid var(--line);
+  border-radius:6px;
+  box-shadow: var(--paper-shadow);
+}
+.side-panel{padding:16px;}
+.side-panel h2{
+  font-size:13px; text-transform:uppercase; letter-spacing:1.5px; color:var(--navy);
+  margin:0 0 10px; border-bottom:1px solid var(--line); padding-bottom:8px;
+}
+.search-row{margin-bottom:10px;}
+.search-row input{
+  width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:3px;
+  background:rgba(255,255,255,.7); font-family:inherit; font-size:13px;
+}
+.day-list{list-style:none; margin:0; padding:0; max-height:520px; overflow-y:auto;}
+.day-list li{
+  padding:9px 10px; border-radius:3px; cursor:pointer; font-size:13.5px;
+  display:flex; justify-content:space-between; align-items:center; gap:6px;
+  border:1px solid transparent; margin-bottom:3px;
+}
+.day-list li:hover{background:rgba(31,47,69,.06);}
+.day-list li.active{background:var(--navy); color:var(--parchment);}
+.day-list li .amt{font-variant-numeric: tabular-nums; font-size:12px; opacity:.8;}
+.day-list .empty{color:var(--ink-soft); font-size:12.5px; padding:8px 4px;}
+
+.main-panel{padding:22px 24px 26px;}
+.doc-header{
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:12px; flex-wrap:wrap;
+}
+.doc-header .date-block label{
+  display:block; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink-soft); margin-bottom:4px;
+}
+.doc-header input[type=date]{
+  font-family:inherit; font-size:18px; font-weight:700; color:var(--navy);
+  border:none; background:transparent; border-bottom:2px solid var(--brass); padding:2px 0;
+}
+.doc-actions{display:flex; gap:8px;}
+
+.section{
+  border:1px solid var(--line); border-radius:5px; margin-bottom:16px; overflow:hidden;
+  background: rgba(255,255,255,.4);
+}
+.section-head{
+  background: linear-gradient(180deg, rgba(31,47,69,.06), rgba(31,47,69,.02));
+  padding:9px 14px; font-size:12.5px; text-transform:uppercase; letter-spacing:1.3px;
+  color:var(--navy); font-weight:700; border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.section-body{padding:14px 16px;}
+.row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:6px 0; border-bottom:1px dashed rgba(90,79,62,.25); font-size:14px;
+}
+.row:last-child{border-bottom:none;}
+.row.total{font-weight:700; color:var(--navy); border-top:1px solid var(--line); margin-top:4px; padding-top:8px;}
+.row label{color:var(--ink-soft);}
+.row .value{font-variant-numeric: tabular-nums; font-weight:600;}
+input.num{
+  width:130px; text-align:right; font-family: 'Courier New', monospace; font-size:14px;
+  padding:5px 8px; border:1px solid var(--line); border-radius:3px; background:rgba(255,255,255,.7); color:var(--ink);
+}
+input.num:focus{outline:2px solid var(--brass); outline-offset:1px;}
+
+.entry-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
+.entry-row{display:flex; align-items:center; gap:8px;}
+.entry-row input.num{width:110px;}
+.entry-row .rm{
+  background:transparent; border:1px solid var(--maroon); color:var(--maroon); width:26px; height:26px;
+  border-radius:50%; padding:0; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center;
+}
+.entry-row .rm:hover{background:var(--maroon); color:#fff;}
+.add-entry{
+  font-size:12.5px; background:transparent; color:var(--brass); border:1px dashed var(--brass);
+  padding:5px 10px;
+}
+.add-entry:hover{background:rgba(168,132,60,.1);}
+.subtotal-line{
+  display:flex; justify-content:space-between; font-size:13px; color:var(--ink-soft); padding-top:4px; border-top:1px solid var(--line); margin-top:6px;
+}
+
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:760px){ .two-col{grid-template-columns:1fr;} }
+
+table.notes-table{width:100%; border-collapse:collapse; font-size:14px;}
+table.notes-table th{
+  text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft);
+  padding:6px 8px; border-bottom:1px solid var(--line);
+}
+table.notes-table th:first-child{text-align:left;}
+table.notes-table td{padding:6px 8px; border-bottom:1px dashed rgba(90,79,62,.2); text-align:right;}
+table.notes-table td:first-child{text-align:left; font-weight:700; color:var(--navy);}
+table.notes-table td.total-cell{font-variant-numeric:tabular-nums;}
+table.notes-table input.num{width:80px;}
+table.notes-table tfoot td{font-weight:700; border-bottom:none; border-top:2px solid var(--brass); padding-top:9px;}
+
+.summary-card{
+  background: linear-gradient(180deg, rgba(31,47,69,.04), rgba(31,47,69,.01));
+  border:1px solid var(--brass); border-radius:6px; padding:16px 18px; margin-top:6px;
+}
+.summary-card .row.total{font-size:16px;}
+.balance-banner{
+  margin-top:14px; padding:14px 18px; border-radius:6px; text-align:center;
+  font-size:16px; font-weight:700; letter-spacing:.3px;
+}
+.balance-banner.ok{background:rgba(61,107,74,.12); color:var(--good); border:1px solid var(--good);}
+.balance-banner.bad{background:rgba(138,47,47,.1); color:var(--bad); border:1px solid var(--bad);}
+.balance-banner .sub{display:block; font-size:12px; font-weight:400; margin-top:3px; opacity:.85;}
+
+.empty-state{
+  text-align:center; padding:60px 20px; color:var(--ink-soft);
+}
+.empty-state h2{color:var(--navy); font-size:20px;}
+.empty-state button{margin-top:10px;}
+
+.toast-wrap{position:fixed; bottom:20px; right:20px; z-index:50; display:flex; flex-direction:column; gap:8px;}
+.toast{
+  background:var(--navy); color:var(--parchment); padding:10px 16px; border-radius:4px; font-size:13px;
+  box-shadow:0 6px 18px rgba(0,0,0,.25); animation: slidein .2s ease;
+}
+.toast.err{background:var(--maroon);}
+@keyframes slidein{from{transform:translateY(8px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+
+footer.hint{
+  text-align:center; font-size:12px; color:var(--ink-soft); margin-top:24px; opacity:.75;
+}
+.small-muted{font-size:11.5px; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="texture"></div>
+<div class="app">
+  <header class="masthead">
+    <div class="masthead-title">
+      <h1>Daily Revenue Calculator</h1>
+      <div class="sub">Revenue Licence Section &middot; Divisional Secretariat</div>
+    </div>
+    <div class="file-controls">
+      <span class="status-pill" id="statusPill"><span class="status-dot" id="statusDot"></span><span id="statusText">No file linked</span></span>
+      <button class="secondary small" id="btnOpen">Open JSON File</button>
+      <button class="brass small" id="btnNew">New / Save As</button>
+      <button class="secondary small" id="btnExport">Export</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel side-panel">
+      <h2>Daily Records</h2>
+      <div class="search-row"><input type="text" id="searchBox" placeholder="Search by date..."></div>
+      <button id="btnAddDay" style="width:100%; margin-bottom:10px;">+ New Day Entry</button>
+      <ul class="day-list" id="dayList"></ul>
+    </aside>
+
+    <main id="mainArea"></main>
+  </div>
+
+  <footer class="hint">Data is saved automatically to your linked JSON file the moment you make a change. Use <strong>Export</strong> anytime for a manual backup copy.</footer>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(() => {
+const DENOMS = [5000,2000,1000,500,100,50,20];
+
+const DB_NAME = 'drc_handles_db';
+const STORE = 'handles';
+const LS_KEY = 'drc_data_v1';
+const LS_HANDLE_FLAG = 'drc_used_fs_api';
+
+let fileHandle = null;
+let data = null;         // { meta:{}, records:{ "YYYY-MM-DD": {...} } }
+let currentDate = null;
+let saveTimer = null;
+let dirty = false;
+
+// ---------- IndexedDB for file handle persistence ----------
+function idbOpen(){
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSet(key, val){
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(val, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const r = tx.objectStore(STORE).get(key);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+
+// ---------- Toasts ----------
+function toast(msg, isErr){
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// ---------- Status ----------
+function setStatus(text, state){
+  document.getElementById('statusText').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (state ? ' ' + state : '');
+}
+
+// ---------- Data helpers ----------
+function blankData(){
+  return { meta: { office: 'Revenue Licence Section', createdAt: new Date().toISOString() }, records: {} };
+}
+function blankRecord(){
+  return {
+    totalFee: 0,
+    totalFine: 0,
+    southernAddition: 0,
+    otherFees: [0],
+    otherFines: [0],
+    otherSch: [0],
+    panatha: 0,
+    notes: Object.fromEntries(DENOMS.map(d => [d, 0])),
+    updatedAt: new Date().toISOString()
+  };
+}
+function sum(arr){ return arr.reduce((a,b) => a + (Number(b)||0), 0); }
+
+function computeDerived(rec){
+  const otherFeeSum = sum(rec.otherFees);
+  const otherFineSum = sum(rec.otherFines);
+  const otherSchSum = sum(rec.otherSch);
+  const southernFee = (Number(rec.totalFee)||0) - otherFeeSum;
+  const southernFine = (Number(rec.totalFine)||0) - otherFineSum;
+  const southernTotal = southernFee + southernFine + (Number(rec.southernAddition)||0);
+  const otherTotal = otherFeeSum + otherFineSum + otherSchSum;
+  const totalLicenceRevenue = southernTotal + otherTotal;
+  const totalCounterRevenue = totalLicenceRevenue + (Number(rec.panatha)||0);
+  const notesTotal = DENOMS.reduce((a,d) => a + d * (Number(rec.notes[d])||0), 0);
+  const balance = notesTotal - totalLicenceRevenue;
+  return { otherFeeSum, otherFineSum, otherSchSum, southernFee, southernFine, southernTotal,
+           otherTotal, totalLicenceRevenue, totalCounterRevenue, notesTotal, balance };
+}
+function fmt(n){
+  const v = Number(n)||0;
+  return v.toLocaleString('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+// ---------- Persistence ----------
+async function persist(){
+  const json = JSON.stringify(data, null, 2);
+  if (fileHandle){
+    try{
+      const writable = await fileHandle.createWritable();
+      await writable.write(json);
+      await writable.close();
+      setStatus('Saved to ' + fileHandle.name, 'ok');
+      dirty = false;
+      return;
+    }catch(e){
+      console.error(e);
+      setStatus('Save failed — check permissions', 'err');
+      toast('Could not write to file: ' + e.message, true);
+      return;
+    }
+  } else {
+    localStorage.setItem(LS_KEY, json);
+    setStatus('Saved locally (browser storage)', 'ok');
+    dirty = false;
+  }
+}
+function scheduleSave(){
+  dirty = true;
+  setStatus('Saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 350);
+}
+
+async function verifyPermission(handle, forWrite){
+  const opts = forWrite ? { mode: 'readwrite' } : {};
+  if ((await handle.queryPermission(opts)) === 'granted') return true;
+  if ((await handle.requestPermission(opts)) === 'granted') return true;
+  return false;
+}
+
+async function openExistingFile(){
+  if (!window.showOpenFilePicker){
+    toast('Your browser does not support direct file linking. Use Export/Import instead.', true);
+    return;
+  }
+  try{
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    const ok = await verifyPermission(handle, true);
+    if (!ok){ toast('Permission denied for that file.', true); return; }
+    const file = await handle.getFile();
+    const text = await file.text();
+    let parsed;
+    try{ parsed = JSON.parse(text); }
+    catch(e){ toast('That file is not valid JSON.', true); return; }
+    if (!parsed.records) parsed = { meta: parsed.meta || blankData().meta, records: parsed.records || {} };
+    data = parsed;
+    fileHandle = handle;
+    await idbSet('lastHandle', handle);
+    localStorage.setItem(LS_HANDLE_FLAG, '1');
+    setStatus('Linked: ' + handle.name, 'ok');
+    pickInitialDate();
+    renderAll();
+    toast('File linked. Changes now save automatically.');
+  }catch(e){
+    if (e.name !== 'AbortError') toast('Could not open file: ' + e.message, true);
+  }
+}
+
+async function newOrSaveAsFile(){
+  if (!window.showSaveFilePicker){
+    toast('Your browser does not support direct file linking. Use Export instead to download a copy.', true);
+    return;
+  }
+  try{
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'daily_revenue_data.json',
+      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    const ok = await verifyPermission(handle, true);
+    if (!ok){ toast('Permission denied for that file.', true); return; }
+    fileHandle = handle;
+    if (!data) data = blankData();
+    await idbSet('lastHandle', handle);
+    localStorage.setItem(LS_HANDLE_FLAG, '1');
+    setStatus('Linked: ' + handle.name, 'ok');
+    pickInitialDate();
+    renderAll();
+    await persist();
+    toast('New file created and linked.');
+  }catch(e){
+    if (e.name !== 'AbortError') toast('Could not create file: ' + e.message, true);
+  }
+}
+
+function exportFile(){
+  if (!data) data = blankData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'daily_revenue_data_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup file downloaded.');
+}
+
+async function tryReconnect(){
+  try{
+    const handle = await idbGet('lastHandle');
+    if (!handle) return false;
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted'){
+      setStatus('Click "Open JSON File" to relink', '');
+      return false;
+    }
+    const file = await handle.getFile();
+    const text = await file.text();
+    data = JSON.parse(text);
+    fileHandle = handle;
+    setStatus('Linked: ' + handle.name, 'ok');
+    return true;
+  }catch(e){ return false; }
+}
+
+// ---------- Rendering ----------
+function pickInitialDate(){
+  const keys = Object.keys(data.records).sort().reverse();
+  currentDate = keys.length ? keys[0] : null;
+}
+
+function renderAll(){
+  renderDayList();
+  renderMain();
+}
+
+function renderDayList(){
+  const list = document.getElementById('dayList');
+  list.innerHTML = '';
+  if (!data){ list.innerHTML = '<li class="empty">Link a file to begin.</li>'; return; }
+  const q = (document.getElementById('searchBox').value || '').trim();
+  const keys = Object.keys(data.records).sort().reverse().filter(k => k.includes(q));
+  if (!keys.length){ list.innerHTML = '<li class="empty">No records yet.</li>'; return; }
+  for (const k of keys){
+    const rec = data.records[k];
+    const d = computeDerived(rec);
+    const li = document.createElement('li');
+    li.className = k === currentDate ? 'active' : '';
+    li.innerHTML = `<span>${k}</span><span class="amt" id="amt_${k}">Rs. ${fmt(d.totalCounterRevenue)}</span>`;
+    li.onclick = () => { currentDate = k; renderAll(); };
+    list.appendChild(li);
+  }
+}
+
+function ensureRecord(dateStr){
+  if (!data.records[dateStr]) data.records[dateStr] = blankRecord();
+  return data.records[dateStr];
+}
+
+function renderMain(){
+  const main = document.getElementById('mainArea');
+  if (!data){
+    main.innerHTML = `
+      <div class="panel empty-state">
+        <h2>No file linked yet</h2>
+        <p>Open an existing JSON data file, or create a new one to get started.<br>
+        Every change you make will be saved to that file instantly.</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:14px;">
+          <button id="es_open">Open JSON File</button>
+          <button class="brass" id="es_new">Create New File</button>
+        </div>
+      </div>`;
+    main.querySelector('#es_open').onclick = openExistingFile;
+    main.querySelector('#es_new').onclick = newOrSaveAsFile;
+    return;
+  }
+  if (!currentDate){
+    main.innerHTML = `
+      <div class="panel empty-state">
+        <h2>No day selected</h2>
+        <p>Create a new daily entry from the panel on the left.</p>
+      </div>`;
+    return;
+  }
+  const rec = ensureRecord(currentDate);
+  const d = computeDerived(rec);
+
+  main.innerHTML = `
+    <div class="panel main-panel">
+      <div class="doc-header">
+        <div class="date-block">
+          <label>Date</label>
+          <input type="date" id="dateInput" value="${currentDate}">
+        </div>
+        <div class="doc-actions">
+          <button class="secondary small" id="btnDuplicate">Duplicate Day</button>
+          <button class="maroon small" id="btnDelete">Delete Day</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Collections Summary</div>
+        <div class="section-body">
+          <div class="row"><label>Total Revenue Licence Fee</label>
+            <input type="text" inputmode="decimal" autocomplete="off" class="num" id="in_totalFee" value="${rec.totalFee}"></div>
+          <div class="row"><label>Total Revenue Licence Fine</label>
+            <input type="text" inputmode="decimal" autocomplete="off" class="num" id="in_totalFine" value="${rec.totalFine}"></div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="section">
+          <div class="section-head">Southern Province</div>
+          <div class="section-body">
+            <div class="row"><label>Fee <span class="small-muted">(total &minus; other prov.)</span></label><span class="value" id="d_southernFee">${fmt(d.southernFee)}</span></div>
+            <div class="row"><label>Fine <span class="small-muted">(total &minus; other prov.)</span></label><span class="value" id="d_southernFine">${fmt(d.southernFine)}</span></div>
+            <div class="row"><label>Addition</label>
+              <input type="text" inputmode="decimal" autocomplete="off" class="num" id="in_addition" value="${rec.southernAddition}"></div>
+            <div class="row total"><label>Total</label><span class="value" id="d_southernTotal">${fmt(d.southernTotal)}</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">Other Province</div>
+          <div class="section-body">
+            <div class="small-muted" style="margin-bottom:4px;">Fee entries</div>
+            <div class="entry-list" id="entries_fee"></div>
+            <button class="add-entry small" data-field="otherFees">+ Add fee entry</button>
+            <div class="subtotal-line"><span>Fee subtotal</span><span id="d_otherFeeSum">${fmt(d.otherFeeSum)}</span></div>
+
+            <div class="small-muted" style="margin:10px 0 4px;">Fine entries</div>
+            <div class="entry-list" id="entries_fine"></div>
+            <button class="add-entry small" data-field="otherFines">+ Add fine entry</button>
+            <div class="subtotal-line"><span>Fine subtotal</span><span id="d_otherFineSum">${fmt(d.otherFineSum)}</span></div>
+
+            <div class="small-muted" style="margin:10px 0 4px;">Service charge entries</div>
+            <div class="entry-list" id="entries_sch"></div>
+            <button class="add-entry small" data-field="otherSch">+ Add s.ch entry</button>
+            <div class="subtotal-line"><span>S.ch subtotal</span><span id="d_otherSchSum">${fmt(d.otherSchSum)}</span></div>
+
+            <div class="row total" style="margin-top:10px;"><label>Total</label><span class="value" id="d_otherTotal">${fmt(d.otherTotal)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Overall Totals</div>
+        <div class="section-body">
+          <div class="row"><label>Total Licence Revenue</label><span class="value" id="d_totalLicenceRevenue">${fmt(d.totalLicenceRevenue)}</span></div>
+          <div class="row"><label>Panatha</label>
+            <input type="text" inputmode="decimal" autocomplete="off" class="num" id="in_panatha" value="${rec.panatha}"></div>
+          <div class="row total"><label>Total Counter Revenue</label><span class="value" id="d_totalCounterRevenue">${fmt(d.totalCounterRevenue)}</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Collected Financial Notes</div>
+        <div class="section-body">
+          <table class="notes-table">
+            <thead><tr><th>Note</th><th>Count</th><th>Total</th></tr></thead>
+            <tbody id="notesBody"></tbody>
+            <tfoot><tr><td>Total</td><td></td><td class="total-cell" id="d_notesTotal">${fmt(d.notesTotal)}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="row total"><label>Cash Counted</label><span class="value" id="d_cashCounted">${fmt(d.notesTotal)}</span></div>
+        <div class="row total"><label>Total Licence Revenue</label><span class="value" id="d_totalLicenceRevenue2">${fmt(d.totalLicenceRevenue)}</span></div>
+        <div class="balance-banner ${d.balance === 0 ? 'ok' : 'bad'}" id="balanceBanner">
+          <span id="d_balanceText">${d.balance === 0 ? 'Balanced' : (d.balance > 0 ? 'Surplus of Rs. ' + fmt(Math.abs(d.balance)) : 'Shortage of Rs. ' + fmt(Math.abs(d.balance)))}</span>
+          <span class="sub">Balance = Cash Counted &minus; Total Licence Revenue</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // ---- wire up events ----
+  main.querySelector('#dateInput').onchange = (e) => {
+    const newDate = e.target.value;
+    if (!newDate || newDate === currentDate) return;
+    if (data.records[newDate]){ toast('A record for that date already exists — switching to it.', true); currentDate = newDate; renderAll(); return; }
+    data.records[newDate] = data.records[currentDate];
+    delete data.records[currentDate];
+    currentDate = newDate;
+    scheduleSave(); renderAll();
+  };
+  main.querySelector('#btnDuplicate').onclick = () => {
+    let base = currentDate; let n = 1; let newDate;
+    do { newDate = addDays(base, n); n++; } while (data.records[newDate]);
+    data.records[newDate] = JSON.parse(JSON.stringify(rec));
+    currentDate = newDate;
+    scheduleSave(); renderAll();
+    toast('Duplicated to ' + newDate);
+  };
+  main.querySelector('#btnDelete').onclick = () => {
+    if (!confirm('Delete the record for ' + currentDate + '? This cannot be undone.')) return;
+    delete data.records[currentDate];
+    pickInitialDate();
+    scheduleSave(); renderAll();
+    toast('Record deleted.');
+  };
+
+  main.querySelector('#in_totalFee').oninput = (e) => { rec.totalFee = parseNum(e.target.value); touch(rec); scheduleSave(); refreshDerivedOnly(); };
+  main.querySelector('#in_totalFine').oninput = (e) => { rec.totalFine = parseNum(e.target.value); touch(rec); scheduleSave(); refreshDerivedOnly(); };
+  main.querySelector('#in_addition').oninput = (e) => { rec.southernAddition = parseNum(e.target.value); touch(rec); scheduleSave(); refreshDerivedOnly(); };
+  main.querySelector('#in_panatha').oninput = (e) => { rec.panatha = parseNum(e.target.value); touch(rec); scheduleSave(); refreshDerivedOnly(); };
+
+  renderEntryList('entries_fee', rec.otherFees, 'otherFees');
+  renderEntryList('entries_fine', rec.otherFines, 'otherFines');
+  renderEntryList('entries_sch', rec.otherSch, 'otherSch');
+
+  main.querySelectorAll('.add-entry').forEach(btn => {
+    btn.onclick = () => {
+      rec[btn.dataset.field].push(0);
+      touch(rec); scheduleSave(); renderMain();
+    };
+  });
+
+  const notesBody = document.getElementById('notesBody');
+  notesBody.innerHTML = '';
+  for (const denom of DENOMS){
+    const tr = document.createElement('tr');
+    const count = rec.notes[denom] || 0;
+    tr.innerHTML = `<td>Rs. ${denom.toLocaleString()}</td>
+      <td><input type="text" inputmode="numeric" autocomplete="off" class="num" data-denom="${denom}" value="${count}"></td>
+      <td class="total-cell" id="d_noteTotal_${denom}">${fmt(denom*count)}</td>`;
+    notesBody.appendChild(tr);
+  }
+  notesBody.querySelectorAll('input').forEach(inp => {
+    inp.oninput = (e) => {
+      const denom = e.target.dataset.denom;
+      rec.notes[denom] = parseIntSafe(e.target.value);
+      touch(rec); scheduleSave(); refreshDerivedOnly();
+    };
+  });
+
+  function renderEntryList(containerId, arr, field){
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    arr.forEach((val, idx) => {
+      const row = document.createElement('div');
+      row.className = 'entry-row';
+      row.innerHTML = `<input type="text" inputmode="decimal" autocomplete="off" class="num" value="${val}">
+        <button class="rm" title="Remove">&times;</button>`;
+      row.querySelector('input').oninput = (e) => {
+        arr[idx] = parseNum(e.target.value);
+        touch(rec); scheduleSave(); refreshDerivedOnly();
+      };
+      row.querySelector('.rm').onclick = () => {
+        arr.splice(idx,1);
+        if (arr.length === 0) arr.push(0);
+        touch(rec); scheduleSave(); renderMain();
+      };
+      el.appendChild(row);
+    });
+  }
+
+  // Patch only the computed (read-only) values in place — never touches
+  // input elements, so focus/cursor position is preserved while typing.
+  function refreshDerivedOnly(){
+    const dd = computeDerived(rec);
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    setText('d_southernFee', fmt(dd.southernFee));
+    setText('d_southernFine', fmt(dd.southernFine));
+    setText('d_southernTotal', fmt(dd.southernTotal));
+    setText('d_otherFeeSum', fmt(dd.otherFeeSum));
+    setText('d_otherFineSum', fmt(dd.otherFineSum));
+    setText('d_otherSchSum', fmt(dd.otherSchSum));
+    setText('d_otherTotal', fmt(dd.otherTotal));
+    setText('d_totalLicenceRevenue', fmt(dd.totalLicenceRevenue));
+    setText('d_totalLicenceRevenue2', fmt(dd.totalLicenceRevenue));
+    setText('d_totalCounterRevenue', fmt(dd.totalCounterRevenue));
+    setText('d_notesTotal', fmt(dd.notesTotal));
+    setText('d_cashCounted', fmt(dd.notesTotal));
+    for (const denom of DENOMS){
+      setText('d_noteTotal_' + denom, fmt(denom * (rec.notes[denom] || 0)));
+    }
+    setText('d_balanceText', dd.balance === 0 ? 'Balanced' :
+      (dd.balance > 0 ? 'Surplus of Rs. ' + fmt(Math.abs(dd.balance)) : 'Shortage of Rs. ' + fmt(Math.abs(dd.balance))));
+    const banner = document.getElementById('balanceBanner');
+    if (banner) banner.className = 'balance-banner ' + (dd.balance === 0 ? 'ok' : 'bad');
+
+    const sideAmt = document.getElementById('amt_' + currentDate);
+    if (sideAmt) sideAmt.textContent = 'Rs. ' + fmt(dd.totalCounterRevenue);
+  }
+}
+
+// Parses free-typed text into a number: strips anything that isn't a
+// digit, minus sign, or decimal point, so pasted/typed values with
+// stray characters never crash the calculation.
+function parseNum(str){
+  if (str === '' || str === '-' || str === '.') return 0;
+  const cleaned = String(str).replace(/[^0-9.\-]/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+function parseIntSafe(str){
+  const cleaned = String(str).replace(/[^0-9]/g, '');
+  const n = parseInt(cleaned, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function touch(rec){ rec.updatedAt = new Date().toISOString(); }
+
+function addDays(dateStr, n){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+
+// ---------- Init ----------
+async function init(){
+  document.getElementById('btnOpen').onclick = openExistingFile;
+  document.getElementById('btnNew').onclick = newOrSaveAsFile;
+  document.getElementById('btnExport').onclick = exportFile;
+  document.getElementById('searchBox').oninput = renderDayList;
+  document.getElementById('btnAddDay').onclick = () => {
+    if (!data) data = blankData();
+    let dateStr = new Date().toISOString().slice(0,10);
+    let n = 0;
+    while (data.records[dateStr]){ n++; dateStr = addDays(new Date().toISOString().slice(0,10), n); }
+    data.records[dateStr] = blankRecord();
+    currentDate = dateStr;
+    scheduleSave(); renderAll();
+  };
+
+  const reconnected = await tryReconnect();
+  if (!reconnected){
+    const stored = localStorage.getItem(LS_KEY);
+    if (stored){
+      try{ data = JSON.parse(stored); setStatus('Using browser storage (no file linked)'); }
+      catch(e){ data = null; }
+    }
+  }
+  if (data) pickInitialDate();
+  renderAll();
+}
+init();
+})();
+</script>
+</body>
+</html>
