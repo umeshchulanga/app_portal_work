@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incentive Distribution Register</title>
+<style>
+  :root{
+    --parchment:#f4ecd8;
+    --parchment-dark:#e8dcc0;
+    --navy:#1c2d4f;
+    --navy-deep:#101b30;
+    --brass:#a9822f;
+    --brass-light:#c9a24a;
+    --maroon:#7a2426;
+    --ink:#2a2318;
+    --ink-soft:#5c5238;
+    --line:#c9b98f;
+    --ok:#2f6b3e;
+    --err:#a13327;
+    --shadow: 0 2px 10px rgba(28,45,79,.15);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #fbf6e8 0%, var(--parchment) 55%, var(--parchment-dark) 100%);
+    color:var(--ink);
+    font-family:'Source Serif 4','Georgia',serif;
+    min-height:100vh;
+    padding:28px 18px 80px;
+  }
+  @font-face{ font-family:'ok'; }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ledger binding rail */
+  .binding{
+    position:fixed; top:0; left:0; bottom:0; width:26px;
+    background:repeating-linear-gradient(180deg, var(--navy-deep) 0 2px, transparent 2px 34px);
+    opacity:.25; pointer-events:none;
+  }
+
+  header.masthead{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    border-bottom:3px double var(--navy);
+    padding-bottom:14px; margin-bottom:22px; gap:20px; flex-wrap:wrap;
+  }
+  .title-block h1{
+    font-family:'Playfair Display','Georgia',serif;
+    font-size:2.05rem; letter-spacing:.5px; margin:0 0 4px;
+    color:var(--navy); font-weight:700;
+  }
+  .title-block .sub{
+    font-size:.8rem; letter-spacing:2.5px; text-transform:uppercase;
+    color:var(--brass); font-weight:600;
+  }
+  .seal{
+    width:76px;height:76px;border-radius:50%;
+    border:3px solid var(--maroon);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--maroon); font-family:'Playfair Display',serif;
+    font-size:.62rem; text-align:center; line-height:1.15;
+    letter-spacing:1px; text-transform:uppercase; font-weight:700;
+    background:
+      repeating-radial-gradient(circle at center, transparent 0 4px, rgba(122,36,38,.06) 4px 5px);
+    transform:rotate(-8deg);
+    flex-shrink:0;
+  }
+
+  .filebar{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    background:var(--navy); color:var(--parchment);
+    padding:10px 14px; border-radius:4px; margin-bottom:22px;
+    box-shadow:var(--shadow);
+  }
+  .filebar .status{margin-left:auto; font-size:.8rem; opacity:.9; display:flex; align-items:center; gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#8a8a8a;display:inline-block;}
+  .dot.connected{background:#4caf6d;}
+  .dot.dirty{background:var(--brass-light);}
+  button{
+    font-family:inherit; cursor:pointer; border:1px solid var(--brass);
+    background:var(--parchment); color:var(--navy); padding:7px 13px;
+    border-radius:3px; font-size:.82rem; font-weight:600; letter-spacing:.3px;
+    transition:transform .08s ease, background .15s ease;
+  }
+  button:hover{background:var(--brass-light); color:var(--navy-deep);}
+  button:active{transform:translateY(1px);}
+  button.ghost{background:transparent; color:var(--parchment); border-color:rgba(244,236,216,.5);}
+  button.ghost:hover{background:rgba(244,236,216,.12); color:var(--parchment);}
+  button.danger{border-color:var(--maroon); color:var(--maroon); background:var(--parchment);}
+  button.danger:hover{background:var(--maroon); color:var(--parchment);}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+
+  section.panel{
+    background:rgba(255,252,244,.72);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px 22px 24px;
+    margin-bottom:26px;
+    box-shadow:var(--shadow);
+  }
+  section.panel h2{
+    font-family:'Playfair Display',serif; color:var(--navy);
+    font-size:1.15rem; margin:0 0 4px; display:flex; align-items:center; gap:10px;
+  }
+  section.panel h2 .idx{
+    font-family:'JetBrains Mono','Courier New',monospace; color:var(--brass);
+    font-size:.85rem; border:1px solid var(--brass); border-radius:50%;
+    width:26px;height:26px; display:flex; align-items:center; justify-content:center;
+  }
+  .panel-note{font-size:.78rem;color:var(--ink-soft);margin:0 0 16px; font-style:italic;}
+
+  .grid-fields{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:14px 18px; margin-bottom:6px;
+  }
+  label{display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--ink-soft); font-weight:600; margin-bottom:5px;}
+  input[type=text],input[type=number],select,input[type=file]{
+    width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:3px;
+    background:#fffdf7; font-family:'JetBrains Mono','Courier New',monospace; font-size:.92rem;
+    color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--brass-light); outline-offset:1px;}
+
+  table{width:100%; border-collapse:collapse; margin-top:10px;}
+  thead th{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:1px;
+    color:var(--navy); text-align:left; padding:8px 10px;
+    border-bottom:2px solid var(--navy); background:rgba(28,45,79,.05);
+  }
+  tbody td{padding:7px 10px; border-bottom:1px solid var(--line); font-size:.9rem; vertical-align:middle;}
+  tbody tr:hover{background:rgba(169,130,47,.08);}
+  tbody input, tbody select{padding:5px 8px; font-size:.86rem;}
+  td.num, th.num{text-align:right; font-family:'JetBrains Mono','Courier New',monospace;}
+  tfoot td{
+    padding:10px; font-weight:700; border-top:3px double var(--navy);
+    font-family:'JetBrains Mono','Courier New',monospace; color:var(--navy);
+  }
+  .icon-btn{
+    background:none;border:none;color:var(--maroon); font-size:1rem; padding:2px 6px;
+  }
+  .icon-btn:hover{background:rgba(122,36,38,.1); border-radius:3px;}
+  .add-row-btn{margin-top:12px;}
+
+  .toast-wrap{position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:8px; z-index:999;}
+  .toast{
+    background:var(--navy); color:var(--parchment); padding:10px 16px; border-radius:4px;
+    font-size:.85rem; box-shadow:var(--shadow); border-left:4px solid var(--brass-light);
+    animation:slidein .25s ease;
+  }
+  .toast.err{border-left-color:var(--maroon);}
+  @keyframes slidein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  .empty-hint{font-size:.85rem; color:var(--ink-soft); font-style:italic; padding:10px 0;}
+  @media (max-width:640px){ .binding{width:12px;} body{padding-left:22px;} }
+  
+  .month-manager {
+    display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; background: rgba(169, 130, 47, 0.05); padding: 12px; border-radius: 4px; border: 1px dashed var(--line);
+  }
+  .template-engine-box {
+    display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; background: rgba(28, 45, 79, 0.04); padding: 12px; border-radius: 4px; border: 1px solid var(--line); margin-top: 10px;
+  }
+</style>
+<!-- Libraries for fully offline docxtemplater integration https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js -->
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+<div class="binding"></div>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="title-block">
+      <h1>Incentive Distribution Register</h1>
+      <div class="sub">Divisional Secretariat &middot; Revenue Licence Section</div>
+    </div>
+    <div class="seal">Office<br>Verified<br>Copy</div>
+  </header>
+
+  <div class="filebar">
+    <button id="btnNew">New Register</button>
+    <button id="btnOpen">Open JSON</button>
+    <button id="btnExport" title="Download a copy with date">Download JSON file</button>
+    <span class="status"><span class="dot" id="connDot"></span><span id="connLabel">No file linked</span></span>
+  </div>
+
+  <section class="panel">
+    <h2><span class="idx">T</span> Document Generation Template Engine</h2>
+    <p class="panel-note">Upload your custom <code>template.docx</code> file to fill ledger datasets entirely offline without requiring a runtime web server.</p>
+    <div class="template-engine-box">
+      <div style="flex-grow: 1; min-width: 240px;">
+        <label for="templateFile">Word Template Source File (.docx)</label>
+        <input type="file" id="templateFile" accept=".docx">
+      </div>
+      <button id="btnWord" style="background: #2b579a; color: white; border-color: #1e3f70; height: 38px;">Generate Word Doc</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="idx">M</span> Month Ledger Control</h2>
+    <p class="panel-note">Select an existing configuration log or append a new tracking segment.</p>
+    <div class="month-manager">
+      <div>
+        <label for="selMonthLog">Saved Months Logs</label>
+        <select id="selMonthLog" style="min-width: 180px;"></select>
+      </div>
+      <div>
+        <label for="fOfficeLocation">Office / DS Name (ප්‍රාදේශීය ලේකම් කාර්යාලය)</label>
+        <input type="text" id="fOfficeLocation" value="මාදම්පාගම" style="min-width: 200px;">
+      </div>
+      <div>
+        <label for="fTargetMonth">Selected Month (මාසය)</label>
+        <input type="text" id="fTargetMonth" value="ජුනි">
+      </div>
+      <div>
+        <label for="fTargetYear">Year (වර්ෂය)</label>
+        <input type="number" id="fTargetYear" value="2026" min="2000" max="2100">
+      </div>
+      <button id="btnSaveMonthLog">Save Current Month Log</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="idx">1</span> Base Figures</h2>
+    <p class="panel-note">These counts drive the automatic incentive calculation below.</p>
+    <div class="grid-fields">
+      <div>
+        <label for="fApplications">No. of Applications</label>
+        <input type="number" id="fApplications" min="0" step="1">
+      </div>
+      <div>
+        <label for="fAppRate">Rate per Application (Rs.)</label>
+        <input type="number" id="fAppRate" min="0" step="0.01">
+      </div>
+      <div>
+        <label for="fSubject">Licences by Subject</label>
+        <input type="number" id="fSubject" min="0" step="1">
+      </div>
+      <div>
+        <label for="fSubjectCoverer">Licences by Subject Coverer</label>
+        <input type="number" id="fSubjectCoverer" min="0" step="1">
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="idx">2</span> Role-wise Incentive</h2>
+    <p class="panel-note">Each role's total = rate per licence &times; the selected basis count. Choose a basis, or set "Custom" and enter a fixed count.</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34px;">#</th>
+          <th>Officer Name (නම)</th>
+          <th>Role / Designation (තනතුර)</th>
+          <th class="num">Rate / Licence (Rs.)</th>
+          <th>Basis</th>
+          <th class="num">Count Used</th>
+          <th class="num">Total (Rs.)</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="rolesBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="6" style="text-align:right;">Grand Total (මුළු මුදල)</td>
+          <td class="num" id="rolesGrandTotal">0.00</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <button class="add-row-btn" id="btnAddRole">+ Add Role</button>
+  </section>
+
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  const DB_NAME = 'incentive-register-db';
+  const STORE = 'handles';
+  const HANDLE_KEY = 'fileHandle';
+
+  const defaultData = () => ({
+    meta:{ title:'Incentive Distribution Register', updatedAt:new Date().toISOString(), office:'මාදම්පාගම', selectedMonthLog: '2026-ජුනි' },
+    base:{ applications:980, appRate:17.5, subjectCount:797, subjectCovererCount:183 },
+    historyLogs: {
+      '2026-ජුනි': {
+        office: 'මාදම්පාගම', month: 'ජුනි', year: 2026,
+        base: { applications:980, appRate:17.5, subjectCount:797, subjectCovererCount:183 },
+        roles: [
+          {id:'r1', name:'සුසීමා කාරියවසම්', role:'ප්‍රාදේශීය ලේකම්', rate:2.75, basis:'applications', customCount:0},
+          {id:'r2', name:'එච්.ජී.ඩී.එන්. ලක්මාල්', role:'ගණකාධිකාරී', rate:2.75, basis:'applications', customCount:0},
+          {id:'r3', name:'පී.වයි.ඒ තරංගනී', role:'මුදල් සහකාර', rate:1.75, basis:'applications', customCount:0},
+          {id:'r4', name:'කේ.යු චුලංග', role:'විෂය ලිපිකරු', rate:7.25, basis:'subject', customCount:0},
+          {id:'r5', name:'බී.වයි.යසශ්‍රි', role:'වැ.බ', rate:7.25, basis:'subjectCoverer', customCount:0},
+          {id:'r6', name:'පී.ඩබ්.ඕ.පී.බී. ද සිල්වා', role:'සරප්', rate:1.75, basis:'applications', customCount:0},
+          {id:'r7', name:'එම්.ඒ.ජී.බී. තරංගනී', role:'කා.කා.ස', rate:1.25, basis:'applications', customCount:0}
+        ]
+      }
+    },
+    roles:[
+      {id:'r1', name:'සුසීමා කාරියවසම්', role:'ප්‍රාදේශීය ලේකම්', rate:2.75, basis:'applications', customCount:0},
+      {id:'r2', name:'එච්.ජී.ඩී.එන්. ලක්මාල්', role:'ගණකාධිකාරී', rate:2.75, basis:'applications', customCount:0},
+      {id:'r3', name:'පී.වයි.ඒ තරංගනී', role:'මුදල් සහකාර', rate:1.75, basis:'applications', customCount:0},
+      {id:'r4', name:'කේ.යු චුලංග', role:'විෂය ලිපිකරු', rate:7.25, basis:'subject', customCount:0},
+      {id:'r5', name:'බී.වයි.යසශ්‍රි', role:'වැ.බ', rate:7.25, basis:'subjectCoverer', customCount:0},
+      {id:'r6', name:'පී.ඩබ්.ඕ.පී.බී. ද සිල්වා', role:'සරප්', rate:1.75, basis:'applications', customCount:0},
+      {id:'r7', name:'එම්.ඒ.ජී.බී. තරංගනී', role:'කා.කා.ස', rate:1.25, basis:'applications', customCount:0}
+    ]
+  });
+
+  function cryptoId(){
+    return 'id_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  }
+
+  let data = defaultData();
+  let fileHandle = null;
+  let dirty = false;
+  let saveTimer = null;
+
+  // ---------- IndexedDB ----------
+  function idbOpen(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbSet(key, val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(val, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function idbGet(key){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE,'readonly');
+      const req = tx.objectStore(STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(tx.error);
+    });
+  }
+
+  // ---------- Toasts ----------
+  function toast(msg, isErr){
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast' + (isErr ? ' err' : '');
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 2600);
+  }
+
+  function setStatus(){
+    const dot = document.getElementById('connDot');
+    const label = document.getElementById('connLabel');
+    if(!fileHandle){
+      dot.className='dot'; label.textContent='No file linked \u2013 changes stay in this tab only';
+    } else if(dirty){
+      dot.className='dot dirty'; label.textContent = 'Saving\u2026 ' + fileHandle.name;
+    } else {
+      dot.className='dot connected'; label.textContent = 'Linked: ' + fileHandle.name;
+    }
+  }
+
+  function scheduleSave(){
+    dirty = true; setStatus();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 350);
+  }
+
+  async function doSave(){
+    data.meta.updatedAt = new Date().toISOString();
+    localStorage.setItem('incentive-register-data', JSON.stringify(data));
+    if(fileHandle){
+      try{
+        const perm = await verifyPermission(fileHandle);
+        if(!perm){ toast('Write permission denied for linked file.', true); return; }
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+        dirty = false; setStatus();
+      }catch(e){
+        toast('Could not write to file: ' + e.message, true);
+      }
+    } else {
+      dirty = false; setStatus();
+    }
+  }
+
+  async function verifyPermission(handle){
+    const opts = {mode:'readwrite'};
+    if((await handle.queryPermission(opts)) === 'granted') return true;
+    if((await handle.requestPermission(opts)) === 'granted') return true;
+    return false;
+  }
+
+  const supportsFS = 'showOpenFilePicker' in window;
+
+  document.getElementById('btnNew').addEventListener('click', () => {
+    if(!confirm('Start a new blank register? Unsaved changes in this tab will be lost.')) return;
+    data = defaultData();
+    fileHandle = null;
+    render(); setStatus();
+    toast('New register started.');
+  });
+
+  document.getElementById('btnOpen').addEventListener('click', async () => {
+    if(!supportsFS){ toast('This browser doesn\u2019t support direct file linking. Use Chrome/Edge.', true); return; }
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types:[{description:'JSON Register', accept:{'application/json':['.json']}}]
+      });
+      const ok = await verifyPermission(handle);
+      if(!ok){ toast('Permission denied.', true); return; }
+      const file = await handle.getFile();
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      data = normalizeData(parsed);
+      fileHandle = handle;
+      await idbSet(HANDLE_KEY, handle);
+      render(); setStatus();
+      toast('Opened ' + handle.name + '. Future edits save here automatically.');
+    }catch(e){
+      if(e.name !== 'AbortError') toast('Could not open file: ' + e.message, true);
+    }
+  });
+
+  document.getElementById('btnExport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().split('T')[0];
+    a.href = url; a.download = `incentive-register-${today}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  function normalizeData(parsed){
+    const d = defaultData();
+    if(parsed && typeof parsed === 'object'){
+      d.meta = Object.assign(d.meta, parsed.meta || {});
+      d.base = Object.assign(d.base, parsed.base || {});
+      d.historyLogs = parsed.historyLogs || d.historyLogs;
+      if(Array.isArray(parsed.roles)) d.roles = parsed.roles.map(r => ({
+        id: r.id || cryptoId(),
+        name: r.name || '',
+        role: r.role || '',
+        rate: Number(r.rate) || 0,
+        basis: r.basis || 'custom',
+        customCount: Number(r.customCount) || 0
+      }));
+    }
+    return d;
+  }
+
+  async function restore(){
+    try{
+      const handle = await idbGet(HANDLE_KEY);
+      if(handle){
+        const perm = await handle.queryPermission({mode:'readwrite'});
+        if(perm === 'granted'){
+          const file = await handle.getFile();
+          data = normalizeData(JSON.parse(await file.text()));
+          fileHandle = handle;
+          toast('Reconnected to ' + handle.name + '.');
+        } else {
+          fileHandle = handle;
+        }
+      } else {
+        const local = localStorage.getItem('incentive-register-data');
+        if(local) data = normalizeData(JSON.parse(local));
+      }
+    }catch(e){
+      const local = localStorage.getItem('incentive-register-data');
+      if(local){ try{ data = normalizeData(JSON.parse(local)); }catch(_){} }
+    }
+    render(); setStatus();
+  }
+
+  function basisCount(role){
+    switch(role.basis){
+      case 'applications': return Number(data.base.applications)||0;
+      case 'subject': return Number(data.base.subjectCount)||0;
+      case 'subjectCoverer': return Number(data.base.subjectCovererCount)||0;
+      case 'custom': return Number(role.customCount)||0;
+      default: return 0;
+    }
+  }
+
+  function fmt(n){
+    return (Math.round(n*100)/100).toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  // ---------- Month History Synchronization System ----------
+  const selMonthLog = document.getElementById('selMonthLog');
+  const fOfficeLocation = document.getElementById('fOfficeLocation');
+  const fTargetMonth = document.getElementById('fTargetMonth');
+  const fTargetYear = document.getElementById('fTargetYear');
+
+  function updateMonthSelector(){
+    selMonthLog.innerHTML = '';
+    Object.keys(data.historyLogs || {}).forEach(key => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      if(data.meta.selectedMonthLog === key) opt.selected = true;
+      selMonthLog.appendChild(opt);
+    });
+  }
+
+  selMonthLog.addEventListener('change', () => {
+    const selectedKey = selMonthLog.value;
+    const log = data.historyLogs[selectedKey];
+    if(log){
+      data.meta.selectedMonthLog = selectedKey;
+      data.base = JSON.parse(JSON.stringify(log.base));
+      data.roles = JSON.parse(JSON.stringify(log.roles));
+      fOfficeLocation.value = log.office || 'මාදම්පාගම';
+      fTargetMonth.value = log.month || '';
+      fTargetYear.value = log.year || 2026;
+      render();
+      scheduleSave();
+      toast(`Loaded log for ${selectedKey}`);
+    }
+  });
+
+  document.getElementById('btnSaveMonthLog').addEventListener('click', () => {
+    const logKey = `${fTargetYear.value}-${fTargetMonth.value.trim()}`;
+    if(!fTargetMonth.value.trim()){ toast('Please specify a valid dynamic month name.', true); return; }
+    
+    data.historyLogs[logKey] = {
+      office: fOfficeLocation.value,
+      month: fTargetMonth.value.trim(),
+      year: parseInt(fTargetYear.value) || 2026,
+      base: JSON.parse(JSON.stringify(data.base)),
+      roles: JSON.parse(JSON.stringify(data.roles))
+    };
+    data.meta.selectedMonthLog = logKey;
+    updateMonthSelector();
+    scheduleSave();
+    toast(`Saved dynamic snapshot under month key: "${logKey}"`);
+  });
+
+  // ---------- Base Figure Fields Mapping ----------
+  const fApplications = document.getElementById('fApplications');
+  const fAppRate = document.getElementById('fAppRate');
+  const fSubject = document.getElementById('fSubject');
+  const fSubjectCoverer = document.getElementById('fSubjectCoverer');
+
+  [ [fApplications,'applications'], [fAppRate,'appRate'], [fSubject,'subjectCount'], [fSubjectCoverer,'subjectCovererCount'] ]
+    .forEach(([el,key]) => {
+      el.addEventListener('input', () => {
+        data.base[key] = parseFloat(el.value) || 0;
+        renderRoles();
+        scheduleSave();
+      });
+    });
+
+  // ---------- Roles Table Rendering Pipeline ----------
+  const rolesBody = document.getElementById('rolesBody');
+  const rolesGrandTotal = document.getElementById('rolesGrandTotal');
+
+  function renderRoles(){
+    fApplications.value = data.base.applications;
+    fAppRate.value = data.base.appRate;
+    fSubject.value = data.base.subjectCount;
+    fSubjectCoverer.value = data.base.subjectCovererCount;
+
+    rolesBody.innerHTML = '';
+    let grand = 0;
+
+    if(data.roles.length === 0){
+      rolesBody.innerHTML = '<tr><td colspan="8" class="empty-hint">No explicit roles configured yet.</td></tr>';
+    }
+
+    data.roles.forEach((role, idx) => {
+      const count = basisCount(role);
+      const total = count * (Number(role.rate)||0);
+      grand += total;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx+1}</td>
+        <td><input type="text" data-field="name" value="${escapeHtml(role.name || '')}" placeholder="නම"></td>
+        <td><input type="text" data-field="role" value="${escapeHtml(role.role || '')}" placeholder="තනතුර"></td>
+        <td class="num"><input type="number" step="0.01" min="0" data-field="rate" value="${role.rate}" style="text-align:right; width:80px;"></td>
+        <td>
+          <select data-field="basis">
+            <option value="applications" ${role.basis==='applications'?'selected':''}>Applications (${data.base.applications})</option>
+            <option value="subject" ${role.basis==='subject'?'selected':''}>Subject (${data.base.subjectCount})</option>
+            <option value="subjectCoverer" ${role.basis==='subjectCoverer'?'selected':''}>Subject Coverer (${data.base.subjectCovererCount})</option>
+            <option value="custom" ${role.basis==='custom'?'selected':''}>Custom</option>
+          </select>
+        </td>
+        <td class="num">${
+          role.basis === 'custom'
+            ? `<input type="number" min="0" step="1" data-field="customCount" value="${role.customCount}" style="text-align:right; width:70px;">`
+            : count
+        }</td>
+        <td class="num">${fmt(total)}</td>
+        <td><button class="icon-btn" data-action="delete" title="Remove row">&#10005;</button></td>
+      `;
+
+      tr.querySelectorAll('[data-field]').forEach(inputEl => {
+        inputEl.addEventListener('input', () => {
+          const field = inputEl.getAttribute('data-field');
+          let val = inputEl.value;
+          if(field === 'rate' || field === 'customCount') val = parseFloat(val) || 0;
+          role[field] = val;
+          renderRoles();
+          scheduleSave();
+        });
+      });
+      tr.querySelector('[data-action="delete"]').addEventListener('click', () => {
+        data.roles = data.roles.filter(r => r.id !== role.id);
+        renderRoles();
+        scheduleSave();
+      });
+
+      rolesBody.appendChild(tr);
+    });
+
+    rolesGrandTotal.textContent = fmt(grand);
+  }
+
+  document.getElementById('btnAddRole').addEventListener('click', () => {
+    data.roles.push({ id:cryptoId(), name:'', role:'නව තනතුර', rate:0, basis:'applications', customCount:0 });
+    renderRoles();
+    scheduleSave();
+  });
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render(){
+    updateMonthSelector();
+    renderRoles();
+  }
+
+  // ---------- docxtemplater Local Processing Architecture ----------
+  document.getElementById('btnWord').addEventListener('click', () => {
+    const fileInput = document.getElementById('templateFile');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+      toast('Please browse and select your Word template (.docx) source first.', true);
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      try {
+        const currentOffice = fOfficeLocation.value;
+        const currentMonth = fTargetMonth.value;
+        const currentYear = fTargetYear.value;
+        const arrayBuffer = e.target.result;
+
+        // Load the binary template into PizZip
+        const zip = new PizZip(arrayBuffer);
+        const doc = new window.docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+        });
+
+        // Compute row mappings for table compilation arrays
+        let grandSum = 0;
+        const rolesData = data.roles.map((r, index) => {
+          const count = basisCount(r);
+          const rowTotal = count * (Number(r.rate) || 0);
+          grandSum += rowTotal;
+
+          return {
+            idx: String(index + 1).padStart(2, '0'),
+            name: r.name || '',
+            role: r.role || '',
+            rate: fmt(r.rate),
+            count: String(count),
+            total: fmt(rowTotal)
+          };
+        });
+
+        // Bind application datasets into document fields
+        doc.render({
+          office: currentOffice,
+          month: currentMonth,
+          year: currentYear,
+          applications: data.base.applications,
+          roles: rolesData,
+          grandSum: fmt(grandSum)
+        });
+
+        // Generate final compiled document file blob stream
+        const out = doc.getZip().generate({
+          type: "blob",
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+
+        // Trigger local save downstream
+        saveAs(out, `Incentive-Report-${currentYear}-${currentMonth}.docx`);
+        toast("Word document compiled completely offline!");
+
+      } catch (err) {
+        console.error(err);
+        toast("Error template engine calculation: " + err.message, true);
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+
+  restore();
+})();
+</script>
+</body>
+</html>
