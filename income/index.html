@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revenue Licence Income Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f1e8d3;
+    --paper-dark: #e6d9b8;
+    --paper-shadow: #d8c89e;
+    --ink: #24303d;
+    --ink-soft: #4a5568;
+    --maroon: #7c2a3a;
+    --maroon-dark: #5e1f2c;
+    --gold: #a9822f;
+    --gold-bright: #c79a3f;
+    --rule-red: #b2483f;
+    --good: #3f6b4a;
+    --bad: #a53838;
+    --muted: #7a725f;
+    font-size: 16px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(ellipse at top left, #efe6d0 0%, var(--paper) 45%, var(--paper-dark) 100%);
+    color: var(--ink);
+    font-family: 'Source Serif 4', serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; }
+
+  /* ===== Header / cover plate ===== */
+  .cover{
+    position: relative;
+    background: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+    border-radius: 10px;
+    padding: 28px 32px 24px;
+    color: #f3e7d6;
+    box-shadow: 0 10px 30px -12px rgba(45,20,20,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .cover::before{
+    content:"";
+    position:absolute; inset:8px;
+    border: 1.5px solid rgba(243,231,214,0.28);
+    border-radius: 6px;
+    pointer-events:none;
+  }
+  .cover-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    margin: 0 0 6px;
+  }
+  .cover h1{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    margin: 0 0 4px;
+    letter-spacing: 0.01em;
+  }
+  .cover p.sub{
+    margin: 0;
+    font-size: 0.92rem;
+    color: #e3cfc0;
+    font-style: italic;
+  }
+  .stamp{
+    position:absolute;
+    right: 26px; top: 20px;
+    width: 92px; height: 92px;
+    border: 2.5px solid var(--gold-bright);
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+    transform: rotate(-9deg);
+    color: var(--gold-bright);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    line-height:1.25;
+    text-transform: uppercase;
+    opacity: 0.9;
+    background: rgba(0,0,0,0.08);
+  }
+  .stamp b{ display:block; font-size:15px; font-family:'Fraunces',serif; letter-spacing:0; margin-top:2px; }
+
+  /* ===== Connection banner ===== */
+  .conn-bar{
+    margin-top: 14px;
+    display:flex; align-items:center; gap: 10px; flex-wrap: wrap;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--paper-shadow);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .dot{ width:9px; height:9px; border-radius:50%; background: var(--bad); flex-shrink:0; }
+  .dot.on{ background: var(--good); }
+  .conn-bar .file-name{ color: var(--ink-soft); }
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform .12s ease, background .15s ease;
+  }
+  .btn:hover{ background: var(--maroon-dark); }
+  .btn:active{ transform: scale(0.97); }
+  .btn.ghost{
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+  }
+  .btn.ghost:hover{ background: rgba(0,0,0,0.06); }
+  .btn.small{ padding: 5px 10px; font-size: 0.7rem; }
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; }
+  .spacer{ flex: 1; }
+
+  /* ===== Connect screen ===== */
+  .connect-screen{
+    margin-top: 40px;
+    text-align:center;
+    padding: 50px 20px;
+  }
+  .connect-screen h2{
+    font-family:'Fraunces', serif;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  .connect-screen p{ color: var(--ink-soft); max-width: 480px; margin: 0 auto 26px; }
+  .connect-actions{ display:flex; gap: 14px; justify-content:center; flex-wrap:wrap; }
+  .connect-actions .btn{ padding: 12px 22px; font-size: 0.82rem; }
+
+  /* ===== Month nav ===== */
+  .month-nav{
+    margin-top: 22px;
+    display:flex; align-items:center; gap: 14px;
+    background: var(--paper);
+    border: 1px solid var(--paper-shadow);
+    border-radius: 8px 8px 0 0;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .month-nav::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-1px; height:3px;
+    background: repeating-linear-gradient(90deg, var(--rule-red) 0 6px, transparent 6px 12px);
+    opacity:0.5;
+  }
+  .month-nav .tab{
+    font-family:'Fraunces', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    min-width: 210px;
+    text-align:center;
+    color: var(--maroon-dark);
+  }
+  .navbtn{
+    width: 30px; height:30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--maroon-dark);
+    background: transparent;
+    color: var(--maroon-dark);
+    font-size: 15px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .navbtn:hover{ background: var(--maroon-dark); color: var(--paper); }
+
+  /* ===== Ledger table ===== */
+  .ledger{
+    background: #fbf6e9;
+    border: 1px solid var(--paper-shadow);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    overflow-x: auto;
+    box-shadow: 0 14px 32px -18px rgba(40,20,10,0.35);
+  }
+  table{
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1080px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+  }
+  thead th{
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 500;
+    text-align: right;
+    padding: 10px 8px;
+    position: sticky; top:0; z-index: 2;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  thead tr.group th{ background:#1b2530; font-size: 0.68rem; text-transform: uppercase; letter-spacing:0.08em; color: var(--gold-bright); }
+  thead th:first-child, tbody td:first-child{ text-align:center; position: sticky; left:0; background: inherit; }
+  thead th.date-col, tbody td.date-col{ text-align:left; position: sticky; left: 46px; }
+  tbody tr{ border-bottom: 1px solid #e6d8b8; }
+  tbody tr:nth-child(even){ background: #f4ecd8; }
+  tbody tr:hover{ background: #ecdfba; }
+  tbody tr.weekend td{ color: var(--maroon); }
+  tbody tr.today{ outline: 2px solid var(--gold-bright); outline-offset: -2px; }
+  td{ padding: 4px 6px; text-align:right; white-space:nowrap; }
+  td.idx{ color: var(--muted); font-size: 0.75rem; }
+  td.date-col{ text-align:left; font-family:'Source Serif 4', serif; font-size:0.82rem; }
+  td input{
+    width: 78px;
+    text-align: right;
+    border: none;
+    background: transparent;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+    padding: 3px 4px;
+    border-radius: 4px;
+  }
+  td input:focus{
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 1.5px var(--gold);
+  }
+  td.computed{ color: var(--good); font-weight: 500; background: rgba(63,107,74,0.06); }
+  td.computed.zero{ color: var(--muted); font-weight: 400; background: none; }
+  tfoot td{
+    background: #efe0bd;
+    font-weight: 600;
+    color: var(--maroon-dark);
+    border-top: 2px solid var(--maroon-dark);
+    position: sticky; bottom:0;
+  }
+  .rowdel{
+    border:none; background:none; color: var(--muted); cursor:pointer; font-size: 13px;
+  }
+  .rowdel:hover{ color: var(--bad); }
+
+  /* ===== Summary panel ===== */
+  .summary{
+    margin-top: 26px;
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    gap: 14px;
+  }
+  .sum-card{
+    background: var(--paper);
+    border: 1px solid var(--paper-shadow);
+    border-left: 4px solid var(--maroon);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .sum-card.total{ border-left-color: var(--gold-bright); background: #efe0bd; }
+  .sum-card .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .sum-card .value{
+    font-family:'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--maroon-dark);
+  }
+
+  /* ===== Template Export Area ===== */
+  .template-box {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px dashed var(--paper-shadow);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .template-box label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+  }
+  .file-input-wrapper input[type=file] {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* ===== toast ===== */
+  .toast{
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper);
+    padding: 10px 18px; border-radius: 6px;
+    font-family:'IBM Plex Mono', monospace; font-size: 0.8rem;
+    opacity: 0; pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err{ background: var(--bad); }
+
+  .hint{ font-size: 0.72rem; color: var(--muted); margin-top:6px; font-style: italic; }
+
+  @media (max-width: 640px){
+    .cover{ padding: 22px 18px 18px; }
+    .stamp{ display:none; }
+    .month-nav .tab{ min-width: 140px; font-size: 1.05rem; }
+    .template-box { flex-direction: column; align-items: stretch; text-align: center; }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <p class="cover-eyebrow">Divisional Secretariat &middot; Register</p>
+    <h1>Revenue Licence Income</h1>
+    <p class="sub">Daily collection ledger — provincial licence fees, fines &amp; panatha</p>
+    <div class="stamp">Auto<b>Saved</b>Register</div>
+
+    <div class="conn-bar" id="connBar">
+      <span class="dot" id="connDot"></span>
+      <span id="connLabel">Not connected</span>
+      <span class="file-name" id="fileNameLabel"></span>
+      <span class="spacer"></span>
+      <button class="btn small ghost" id="btnReconnect" style="display:none;">Reconnect</button>
+      <button class="btn small ghost" id="btnChangeFile" style="display:none;">Change file</button>
+      <button class="btn small ghost" id="btnExport">Export backup</button>
+      <button class="btn small ghost" id="btnImportSeed" title="Load the May 2026 data from your original spreadsheet">Load May 2026 sample</button>
+    </div>
+  </div>
+
+  <div id="connectScreen" class="connect-screen" style="display:none;">
+    <h2>Connect your data file</h2>
+    <p>This register reads and writes a single JSON file on your computer. Every add, edit, or delete saves to that file immediately — no downloads, no manual exporting.</p>
+    <div class="connect-actions">
+      <button class="btn" id="btnCreateFile">Create new register.json</button>
+      <button class="btn ghost" id="btnOpenFile">Open existing file</button>
+    </div>
+    <p class="hint" id="apiHint"></p>
+  </div>
+
+  <div id="appBody" style="display:none;">
+
+    <div class="month-nav">
+      <button class="navbtn" id="prevMonth">&#8249;</button>
+      <div class="tab" id="monthLabel">May 2026</div>
+      <button class="navbtn" id="nextMonth">&#8250;</button>
+      <span class="spacer"></span>
+      <button class="btn small ghost" id="btnToday">This month</button>
+    </div>
+
+    <div class="ledger">
+      <table id="ledgerTable">
+        <thead>
+          <tr class="group">
+            <th></th><th></th>
+            <th colspan="2">Southern Province</th>
+            <th colspan="2">Other Province</th>
+            <th></th><th></th><th></th><th></th>
+            <th colspan="3">Banked</th>
+          </tr>
+          <tr>
+            <th>#</th>
+            <th class="date-col">Date</th>
+            <th>Fee</th><th>Fine</th>
+            <th>Fee</th><th>Fine</th>
+            <th>Service Chg.</th>
+            <th>Panatha</th>
+            <th>Addition</th>
+            <th>Deduction</th>
+            <th>Counter Rev.</th>
+            <th>S. Province</th>
+            <th>O. Province</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+        <tfoot id="ledgerFoot"></tfoot>
+      </table>
+    </div>
+
+    <div class="summary" id="summaryPanel"></div>
+
+    <div class="template-box">
+      <label for="templateFileInput">Generate Report from Word Template (.docx):</label>
+      <div class="file-input-wrapper">
+        <button class="btn ghost">Choose Template File</button>
+        <input type="file" id="templateFileInput" accept=".docx">
+      </div>
+      <span id="templateFileName" class="hint" style="margin-top:0;">No template file chosen</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnGenerateDoc" disabled>Export Monthly Summary Document</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const FSA_SUPPORTED = 'showSaveFilePicker' in window;
+  const DB_NAME = 'revenue-ledger-db';
+  const STORE_NAME = 'handles';
+  const LS_KEY = 'revenue_ledger_data_fallback';
+
+  let fileHandle = null;
+  let data = { entries: {} }; // keyed by YYYY-MM-DD
+  let currentYear, currentMonth; // month 0-indexed
+  let saveTimer = null;
+  let currentMonthlyTotals = {}; // Cached variables to use during .docx compilation
+
+  const $ = (id) => document.getElementById(id);
+  const toastEl = $('toast');
+
+  function showToast(msg, isErr){
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show' + (isErr ? ' err' : '');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> toastEl.className = 'toast', 2200);
+  }
+
+  // ---------- IndexedDB handle storage ----------
+  function idbOpen(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbSet(key, val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE_NAME,'readwrite');
+      tx.objectStore(STORE_NAME).put(val, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function idbGet(key){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE_NAME,'readonly');
+      const req = tx.objectStore(STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ---------- File I/O ----------
+  async function verifyPermission(handle, forWrite){
+    const opts = forWrite ? {mode:'readwrite'} : {};
+    if ((await handle.queryPermission(opts)) === 'granted') return true;
+    if ((await handle.requestPermission(opts)) === 'granted') return true;
+    return false;
+  }
+
+  async function readFileHandle(handle){
+    const file = await handle.getFile();
+    const text = await file.text();
+    try{ return text.trim() ? JSON.parse(text) : { entries: {} }; }
+    catch(e){ return { entries: {} }; }
+  }
+
+  async function writeFileHandle(handle, obj){
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(obj, null, 2));
+    await writable.close();
+  }
+
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try{
+        if (fileHandle){
+          await writeFileHandle(fileHandle, data);
+          setConnStatus(true, fileHandle.name);
+        } else {
+          localStorage.setItem(LS_KEY, JSON.stringify(data));
+        }
+      } catch(e){
+        showToast('Could not save: ' + e.message, true);
+      }
+    }, 180);
+  }
+
+  function setConnStatus(connected, name){
+    $('connDot').className = 'dot' + (connected ? ' on' : '');
+    $('connLabel').textContent = connected ? 'Saving live to' : (FSA_SUPPORTED ? 'Not connected' : 'Browser storage mode (no file API)');
+    $('fileNameLabel').textContent = connected ? name : '';
+    $('btnReconnect').style.display = 'none';
+    $('btnChangeFile').style.display = connected ? '' : 'none';
+  }
+
+  // ---------- Init / connect flow ----------
+  async function init(){
+    if (!FSA_SUPPORTED){
+      $('apiHint').textContent = 'Your browser does not support direct file saving (this works in Chrome / Edge). Using browser storage instead — use "Export backup" to save a JSON copy any time.';
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw){ try{ data = JSON.parse(raw); }catch(e){ data = {entries:{}}; } }
+      setConnStatus(false);
+      showApp();
+      return;
+    }
+
+    const stored = await idbGet('fileHandle');
+    if (stored){
+      const granted = await (async ()=>{
+        try{ return (await stored.queryPermission({mode:'readwrite'})) === 'granted'; }
+        catch(e){ return false; }
+      })();
+      if (granted){
+        fileHandle = stored;
+        data = await readFileHandle(fileHandle);
+        setConnStatus(true, fileHandle.name);
+        showApp();
+        return;
+      } else {
+        // need a user gesture to reconnect
+        $('connectScreen').style.display = 'none';
+        $('appBody').style.display = 'none';
+        $('btnReconnect').style.display = '';
+        $('connLabel').textContent = 'Connection needs re-approval';
+        $('fileNameLabel').textContent = stored.name;
+        $('btnReconnect').onclick = async () => {
+          try{
+            const ok = await verifyPermission(stored, true);
+            if (!ok) { showToast('Permission denied', true); return; }
+            fileHandle = stored;
+            data = await readFileHandle(fileHandle);
+            setConnStatus(true, fileHandle.name);
+            showApp();
+          } catch(e){ showToast(e.message, true); }
+        };
+        return;
+      }
+    }
+    $('connectScreen').style.display = '';
+  }
+
+  async function createNewFile(){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'revenue-licence-income.json',
+        types: [{ description:'JSON file', accept: {'application/json':['.json']} }]
+      });
+      await writeFileHandle(handle, data);
+      fileHandle = handle;
+      await idbSet('fileHandle', handle);
+      setConnStatus(true, handle.name);
+      showApp();
+    } catch(e){ if (e.name !== 'AbortError') showToast(e.message, true); }
+  }
+
+  async function openExistingFile(){
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description:'JSON file', accept: {'application/json':['.json']} }]
+      });
+      const ok = await verifyPermission(handle, true);
+      if (!ok){ showToast('Permission denied', true); return; }
+      data = await readFileHandle(handle);
+      fileHandle = handle;
+      await idbSet('fileHandle', handle);
+      setConnStatus(true, handle.name);
+      showApp();
+    } catch(e){ if (e.name !== 'AbortError') showToast(e.message, true); }
+  }
+
+  function showApp(){
+    $('connectScreen').style.display = 'none';
+    $('appBody').style.display = '';
+    if (!data.entries) data.entries = {};
+    const dates = Object.keys(data.entries).sort();
+    const latest = dates.length ? new Date(dates[dates.length-1] + 'T00:00:00') : new Date();
+    currentYear = latest.getFullYear();
+    currentMonth = latest.getMonth();
+    renderMonth();
+  }
+
+  // ---------- Entry helpers ----------
+  const FIELDS = ['spFee','spFine','opFee','opFine','serviceCharge','panatha','addition','deduction'];
+
+  function emptyEntry(){
+    const e = {}; FIELDS.forEach(f => e[f] = 0); return e;
+  }
+  function getEntry(dateStr){
+    return data.entries[dateStr] || null;
+  }
+  function ensureEntry(dateStr){
+    if (!data.entries[dateStr]) data.entries[dateStr] = emptyEntry();
+    return data.entries[dateStr];
+  }
+  function computed(e){
+    const spFee=e.spFee||0, spFine=e.spFine||0, opFee=e.opFee||0, opFine=e.opFine||0,
+          sc=e.serviceCharge||0, pan=e.panatha||0;
+    return {
+      counterRevenue: spFee+spFine+opFee+opFine+sc+pan,
+      bankedSP: spFee+spFine,
+      bankedOP: opFee+opFine+sc,
+      bankedPanatha: pan
+    };
+  }
+  function isRowEmpty(e){
+    return !e || FIELDS.every(f => !e[f]);
+  }
+  function fmt(n){
+    return (n||0).toLocaleString('en-US');
+  }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // ---------- Rendering ----------
+  function renderMonth(){
+    $('monthLabel').textContent = MONTH_NAMES[currentMonth] + ' ' + currentYear;
+    const body = $('ledgerBody');
+    body.innerHTML = '';
+    const nDays = daysInMonth(currentYear, currentMonth);
+    const todayStr = new Date().toISOString().slice(0,10);
+
+    const totals = {};
+    ['spFee','spFine','opFee','opFine','serviceCharge','panatha','addition','deduction','counterRevenue','bankedSP','bankedOP','bankedPanatha'].forEach(k=>totals[k]=0);
+
+    for (let d=1; d<=nDays; d++){
+      const dateStr = `${currentYear}-${pad(currentMonth+1)}-${pad(d)}`;
+      const dow = new Date(currentYear, currentMonth, d).getDay();
+      const entry = getEntry(dateStr);
+      const eff = entry || emptyEntry();
+      const comp = computed(eff);
+
+      FIELDS.forEach(f => totals[f] += eff[f]||0);
+      totals.counterRevenue += comp.counterRevenue;
+      totals.bankedSP += comp.bankedSP;
+      totals.bankedOP += comp.bankedOP;
+      totals.bankedPanatha += comp.bankedPanatha;
+
+      const tr = document.createElement('tr');
+      if (dow === 0 || dow === 6) tr.className = 'weekend';
+      if (dateStr === todayStr) tr.className += ' today';
+
+      const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dow];
+
+      tr.innerHTML = `
+        <td class="idx">${d}</td>
+        <td class="date-col">${dayLabel} ${d}</td>
+        ${FIELDS.map(f => `<td><input inputmode="numeric" data-date="${dateStr}" data-field="${f}" value="${eff[f] || ''}" placeholder="0"></td>`).join('')}
+        <td class="computed ${comp.counterRevenue?'':'zero'}">${fmt(comp.counterRevenue)}</td>
+        <td class="computed ${comp.bankedSP?'':'zero'}">${fmt(comp.bankedSP)}</td>
+        <td class="computed ${comp.bankedOP?'':'zero'}">${fmt(comp.bankedOP)}</td>
+        <td><button class="rowdel" title="Clear this day" data-clear="${dateStr}">&#10005;</button></td>
+      `;
+      body.appendChild(tr);
+    }
+
+    const foot = $('ledgerFoot');
+    foot.innerHTML = `<tr>
+      <td colspan="2">Total</td>
+      <td>${fmt(totals.spFee)}</td>
+      <td>${fmt(totals.spFine)}</td>
+      <td>${fmt(totals.opFee)}</td>
+      <td>${fmt(totals.opFine)}</td>
+      <td>${fmt(totals.serviceCharge)}</td>
+      <td>${fmt(totals.panatha)}</td>
+      <td>${fmt(totals.addition)}</td>
+      <td>${fmt(totals.deduction)}</td>
+      <td>${fmt(totals.counterRevenue)}</td>
+      <td>${fmt(totals.bankedSP)}</td>
+      <td>${fmt(totals.bankedOP)}</td>
+      <td></td>
+    </tr>`;
+
+    currentMonthlyTotals = totals; // update dynamic variables
+    renderSummary(totals);
+    attachRowHandlers();
+  }
+
+  function renderSummary(totals){
+    const licenceFeeInclSC = totals.spFee + totals.opFee + totals.serviceCharge;
+    const fine = totals.spFine + totals.opFine;
+    const panatha = totals.panatha;
+    const feePlusFine = licenceFeeInclSC + fine;
+    const feePlusFinePlusPanatha = feePlusFine + panatha;
+
+    const cards = [
+      ['Licence fee incl. service charge', licenceFeeInclSC, false],
+      ['Fine (SP + OP)', fine, false],
+      ['Panatha', panatha, false],
+      ['Licence fee + fine', feePlusFine, false],
+      ['Licence fee + fine + panatha', feePlusFinePlusPanatha, true],
+    ];
+    $('summaryPanel').innerHTML = cards.map(([label,val,isTotal]) => `
+      <div class="sum-card${isTotal?' total':''}">
+        <div class="label">${label}</div>
+        <div class="value">Rs. ${fmt(val)}</div>
+      </div>`).join('');
+  }
+
+  function attachRowHandlers(){
+    document.querySelectorAll('#ledgerBody input').forEach(inp => {
+      inp.addEventListener('input', onFieldInput);
+    });
+    document.querySelectorAll('#ledgerBody [data-clear]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dateStr = btn.getAttribute('data-clear');
+        if (!getEntry(dateStr)) return;
+        delete data.entries[dateStr];
+        persist();
+        renderMonth();
+        showToast('Day cleared');
+      });
+    });
+  }
+
+  function onFieldInput(e){
+    const dateStr = e.target.getAttribute('data-date');
+    const field = e.target.getAttribute('data-field');
+    let val = parseFloat(e.target.value);
+    if (isNaN(val)) val = 0;
+    const entry = ensureEntry(dateStr);
+    entry[field] = val;
+    if (isRowEmpty(entry)) delete data.entries[dateStr];
+
+    // live-update computed cells in this row without full re-render (keeps focus)
+    const tr = e.target.closest('tr');
+    const eff = getEntry(dateStr) || emptyEntry();
+    const comp = computed(eff);
+    const computedCells = tr.querySelectorAll('td.computed');
+    computedCells[0].textContent = fmt(comp.counterRevenue);
+    computedCells[0].className = 'computed' + (comp.counterRevenue?'':' zero');
+    computedCells[1].textContent = fmt(comp.bankedSP);
+    computedCells[1].className = 'computed' + (comp.bankedSP?'':' zero');
+    computedCells[2].textContent = fmt(comp.bankedOP);
+    computedCells[2].className = 'computed' + (comp.bankedOP?'':' zero');
+
+    persist();
+    updateFootAndSummaryDebounced();
+  }
+
+  let footTimer = null;
+  function updateFootAndSummaryDebounced(){
+    clearTimeout(footTimer);
+    footTimer = setTimeout(() => {
+      const nDays = daysInMonth(currentYear, currentMonth);
+      const totals = {};
+      ['spFee','spFine','opFee','opFine','serviceCharge','panatha','addition','deduction','counterRevenue','bankedSP','bankedOP','bankedPanatha'].forEach(k=>totals[k]=0);
+      for (let d=1; d<=nDays; d++){
+        const dateStr = `${currentYear}-${pad(currentMonth+1)}-${pad(d)}`;
+        const eff = getEntry(dateStr) || emptyEntry();
+        const comp = computed(eff);
+        FIELDS.forEach(f => totals[f] += eff[f]||0);
+        totals.counterRevenue += comp.counterRevenue;
+        totals.bankedSP += comp.bankedSP;
+        totals.bankedOP += comp.bankedOP;
+        totals.bankedPanatha += comp.bankedPanatha;
+      }
+      const foot = $('ledgerFoot');
+      foot.innerHTML = `<tr>
+        <td colspan="2">Total</td>
+        <td>${fmt(totals.spFee)}</td>
+        <td>${fmt(totals.spFine)}</td>
+        <td>${fmt(totals.opFee)}</td>
+        <td>${fmt(totals.opFine)}</td>
+        <td>${fmt(totals.serviceCharge)}</td>
+        <td>${fmt(totals.panatha)}</td>
+        <td>${fmt(totals.addition)}</td>
+        <td>${fmt(totals.deduction)}</td>
+        <td>${fmt(totals.counterRevenue)}</td>
+        <td>${fmt(totals.bankedSP)}</td>
+        <td>${fmt(totals.bankedOP)}</td>
+        <td></td>
+      </tr>`;
+      currentMonthlyTotals = totals;
+      renderSummary(totals);
+    }, 250);
+  }
+
+  // ---------- Word Template Processing Engine ----------
+  let templateBinaryContent = null;
+
+  $('templateFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    $('templateFileName').textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      templateBinaryContent = evt.target.result;
+      $('btnGenerateDoc').disabled = false;
+      showToast('Template file loaded successfully');
+    };
+    reader.onerror = function() {
+      showToast('Error reading template file', true);
+      $('btnGenerateDoc').disabled = true;
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  $('btnGenerateDoc').addEventListener('click', function() {
+    if (!templateBinaryContent) {
+      showToast('Please select a valid template first', true);
+      return;
+    }
+
+    try {
+      const zip = new PizZip(templateBinaryContent);
+      const doc = new window.docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+      });
+
+      // Prepare context dataset matching Word document boundaries
+      const currentMonthText = MONTH_NAMES[currentMonth] + ' ' + currentYear;
+      const southernProvinceValue = (currentMonthlyTotals.spFee || 0) + (currentMonthlyTotals.spFine || 0);
+      const otherProvinceValue = (currentMonthlyTotals.opFee || 0) + (currentMonthlyTotals.opFine || 0) + (currentMonthlyTotals.serviceCharge || 0);
+      const panathaValue = currentMonthlyTotals.panatha || 0;
+      const counterRevenueValue = currentMonthlyTotals.counterRevenue || 0;
+
+      // Assign context tags explicitly
+      doc.render({
+        month: currentMonthText,
+        Southern_Province: southernProvinceValue.toLocaleString('en-US'),
+        Other_Province: otherProvinceValue.toLocaleString('en-US'),
+        panatha: panathaValue.toLocaleString('en-US'),
+        "Counter_Rev.": counterRevenueValue.toLocaleString('en-US')
+      });
+
+      const out = doc.getZip().generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      // Deliver document binary stream securely via FileSaver
+      const targetFilename = `Revenue_Licence_Summary_${MONTH_NAMES[currentMonth]}_${currentYear}.docx`;
+      window.saveAs(out, targetFilename);
+      showToast('Report generated successfully');
+    } catch (error) {
+      console.error(error);
+      showToast('Error generating summary document', true);
+    }
+  });
+
+  // ---------- Controls ----------
+  $('prevMonth').addEventListener('click', () => {
+    currentMonth--; if (currentMonth < 0){ currentMonth = 11; currentYear--; }
+    renderMonth();
+  });
+  $('nextMonth').addEventListener('click', () => {
+    currentMonth++; if (currentMonth > 11){ currentMonth = 0; currentYear++; }
+    renderMonth();
+  });
+  $('btnToday').addEventListener('click', () => {
+    const now = new Date();
+    currentYear = now.getFullYear(); currentMonth = now.getMonth();
+    renderMonth();
+  });
+  $('btnCreateFile').addEventListener('click', createNewFile);
+  $('btnOpenFile').addEventListener('click', openExistingFile);
+  $('btnChangeFile').addEventListener('click', async () => {
+    fileHandle = null;
+    $('appBody').style.display = 'none';
+    $('connectScreen').style.display = '';
+    setConnStatus(false);
+  });
+  $('btnExport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'revenue-licence-income-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup downloaded');
+  });
+  $('btnImportSeed').addEventListener('click', () => {
+    SEED_DATA.forEach(row => {
+      const {date, ...rest} = row;
+      if (Object.values(rest).some(v=>v)) data.entries[date] = rest;
+    });
+    persist();
+    currentYear = 2026; currentMonth = 4; // May 2026
+    if ($('appBody').style.display === 'none') showApp(); else renderMonth();
+    showToast('May 2026 sample data loaded');
+  });
+
+  const SEED_DATA = [{"date": "2026-05-01", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-02", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-03", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-04", "spFee": 106850, "spFine": 9200, "opFee": 2500, "opFine": 160, "serviceCharge": 300, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-05", "spFee": 70488, "spFine": 3967, "opFee": 12400, "opFine": 1240, "serviceCharge": 200, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-06", "spFee": 62100, "spFine": 3980, "opFee": 14300, "opFine": 1430, "serviceCharge": 300, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-07", "spFee": 61175, "spFine": 4115, "opFee": 1800, "opFine": 180, "serviceCharge": 200, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-08", "spFee": 73900, "spFine": 1510, "opFee": 900, "opFine": 180, "serviceCharge": 100, "panatha": 700, "addition": 0, "deduction": 0}, {"date": "2026-05-09", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-10", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-11", "spFee": 106950, "spFine": 7245, "opFee": 1000, "opFine": 100, "serviceCharge": 100, "panatha": 3500, "addition": 0, "deduction": 0}, {"date": "2026-05-12", "spFee": 82950, "spFine": 6035, "opFee": 10700, "opFine": 1720, "serviceCharge": 500, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-13", "spFee": 72000, "spFine": 4650, "opFee": 900, "opFine": 90, "serviceCharge": 100, "panatha": 700, "addition": 0, "deduction": 0}, {"date": "2026-05-14", "spFee": 66200, "spFine": 3630, "opFee": 1800, "opFine": 180, "serviceCharge": 200, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-15", "spFee": 120100, "spFine": 7540, "opFee": 2800, "opFine": 300, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-16", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-17", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-18", "spFee": 111400, "spFine": 9490, "opFee": 2600, "opFine": 0, "serviceCharge": 100, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-19", "spFee": 90600, "spFine": 6250, "opFee": 2800, "opFine": 450, "serviceCharge": 200, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-20", "spFee": 72800, "spFine": 6510, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-21", "spFee": 81400, "spFine": 6610, "opFee": 900, "opFine": 90, "serviceCharge": 100, "panatha": 700, "addition": 0, "deduction": 0}, {"date": "2026-05-22", "spFee": 107900, "spFine": 7110, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-23", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-24", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-25", "spFee": 133100, "spFine": 7120, "opFee": 12400, "opFine": 1240, "serviceCharge": 200, "panatha": 3500, "addition": 0, "deduction": 0}, {"date": "2026-05-26", "spFee": 67700, "v": 4490, "opFee": 7000, "opFine": 0, "serviceCharge": 100, "panatha": 700, "addition": 0, "deduction": 0}, {"date": "2026-05-27", "spFee": 110050, "spFine": 10205, "opFee": 20309, "opFine": 1710, "serviceCharge": 600, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-28", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-29", "spFee": 124600, "spFine": 10800, "opFee": 6400, "opFine": 640, "serviceCharge": 200, "panatha": 700, "addition": 0, "deduction": 0}, {"date": "2026-05-30", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}, {"date": "2026-05-31", "spFee": 0, "spFine": 0, "opFee": 0, "opFine": 0, "serviceCharge": 0, "panatha": 0, "addition": 0, "deduction": 0}];
+
+  init();
+})();
+</script>
+</body>
+</html>

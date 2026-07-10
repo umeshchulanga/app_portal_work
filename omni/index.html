@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenue License & Root Permit Fee Calculator</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input[readonly] {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
+            color: #1e293b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .highlight-row {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .grand-total-card {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grand-total-card h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .grand-total-amount {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #475569;
+            margin-left: 8px;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        
+        .info-note {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Fee & Permit Calculator</h1>
+        <p style="color: #64748b; margin: 0;">Modified logic variant based on V2_Omini.xlsx</p>
+    </header>
+
+    <!-- INPUTS -->
+    <div class="card">
+        <div class="section-title">1. Calculation Variables</div>
+        <div class="grid">
+            <div class="form-group">
+                <label for="licenseEndDate">Last Rev. Lic. End Date</label>
+                <input type="date" id="licenseEndDate" value="2026-05-15">
+            </div>
+            <div class="form-group">
+                <label for="todayDate">Today's Date</label>
+                <input type="date" id="todayDate" value="2026-05-22">
+            </div>
+            <div class="form-group">
+                <label for="totalSeats">Total Seats</label>
+                <input type="number" id="totalSeats" value="49" min="1">
+            </div>
+            <div class="form-group">
+                <label for="feePerDay">Late Fee Per Day</label>
+                <input type="number" id="feePerDay" value="450" min="0">
+            </div>
+        </div>
+        <div class="grid">
+            <div class="form-group">
+                <label for="licenseLateDays">Revenue License Late Days</label>
+                <input type="number" id="licenseLateDays" readonly>
+            </div>
+            <div class="form-group">
+                <label for="rootLateDays">Late Days for Root Permit</label>
+                <input type="number" id="rootLateDays" value="34" min="0">
+            </div>
+        </div>
+        <div class="info-note">* Note: Revenue License Late Days automatically subtracts 1 day per instructions.</div>
+    </div>
+
+    <!-- REVENUE LICENSE BREAKDOWN -->
+    <div class="card">
+        <div class="section-title">2. Revenue License Late Fee Breakdown</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Formula / Condition</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Base Late Fee of Revenue License</td>
+                    <td><small>(Late Days × Seats × Fee) / 365</small></td>
+                    <td id="baseLicenseFee" class="text-right">0.00</td>
+                </tr>
+                <tr id="rowLic10">
+                    <td>Additional 10% Fine <span id="badgeLic10" class="badge">Active (&le; 90 days)</span></td>
+                    <td><small>Base Late Fee × 10%</small></td>
+                    <td id="licFine10" class="text-right">0.00</td>
+                </tr>
+                <tr id="rowLic20">
+                    <td>Additional 20% Fine <span id="badgeLic20" class="badge">Inactive (&gt; 90 days)</span></td>
+                    <td><small>Base Late Fee × 20%</small></td>
+                    <td id="licFine20" class="text-right">0.00</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>Total Revenue License Fee with Fine</td>
+                    <td id="licFormulaLabel">Base Fee + Fine</td>
+                    <td id="totalLicenseFee" class="text-right">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ROOT PERMIT BREAKDOWN -->
+    <div class="card">
+        <div class="section-title">3. Root Permit Charges Breakdown</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Formula / Condition</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Base Root Permit Charges</td>
+                    <td><small>(Root Late Days × Seats × Fee) / 365</small></td>
+                    <td id="baseRootFee" class="text-right">0.00</td>
+                </tr>
+                <tr id="rowRoot10">
+                    <td>Additional 10% Fine <span id="badgeRoot10" class="badge">Active (&le; 90 days)</span></td>
+                    <td><small>Base Root Fee × 10%</small></td>
+                    <td id="rootFine10" class="text-right">0.00</td>
+                </tr>
+                <tr id="rowRoot20">
+                    <td>Additional 20% Fine <span id="badgeRoot20" class="badge">Inactive (&gt; 90 days)</span></td>
+                    <td><small>Base Root Fee × 20%</small></td>
+                    <td id="rootFine20" class="text-right">0.00</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>Total Root Permit Charges with Fine</td>
+                    <td id="rootFormulaLabel">Base Fee + Fine</td>
+                    <td id="totalRootFee" class="text-right">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- GRAND TOTAL -->
+    <div class="grand-total-card">
+        <h2>Grand Total Due</h2>
+        <div id="grandTotal" class="grand-total-amount">0.00</div>
+    </div>
+</div>
+
+<script>
+    // Elements
+    const licenseEndDateInput = document.getElementById('licenseEndDate');
+    const todayDateInput = document.getElementById('todayDate');
+    const totalSeatsInput = document.getElementById('totalSeats');
+    const feePerDayInput = document.getElementById('feePerDay');
+    const licenseLateDaysInput = document.getElementById('licenseLateDays');
+    const rootLateDaysInput = document.getElementById('rootLateDays');
+
+    function calculate() {
+        // Parse inputs
+        const licenseEnd = new Date(licenseEndDateInput.value);
+        const today = new Date(todayDateInput.value);
+        const seats = parseFloat(totalSeatsInput.value) || 0;
+        const feePerDay = parseFloat(feePerDayInput.value) || 0;
+        const rootLateDays = parseFloat(rootLateDaysInput.value) || 0;
+
+        // Modification 1: Calculate Revenue License Late Days and subtract 1
+        let licenseLateDays = 0;
+        if (today > licenseEnd) {
+            const diffTime = Math.abs(today - licenseEnd);
+            const calendarDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            licenseLateDays = Math.max(0, calendarDays - 1); // Deduct 1 day, floor at 0
+        }
+        licenseLateDaysInput.value = licenseLateDays;
+
+        // 2. Revenue License Calculations
+        const baseLicenseFee = (licenseLateDays * seats * feePerDay) / 365;
+        document.getElementById('baseLicenseFee').innerText = baseLicenseFee.toFixed(2);
+
+        let licFine = 0;
+        // Modification 2: 10% fine applied if days are less than OR EQUAL to 90
+        if (licenseLateDays > 90) {
+            licFine = baseLicenseFee * 0.20;
+            document.getElementById('licFine10').innerText = "0.00";
+            document.getElementById('licFine20').innerText = licFine.toFixed(2);
+            document.getElementById('badgeLic10').className = "badge";
+            document.getElementById('badgeLic20').className = "badge badge-active";
+            document.getElementById('licFormulaLabel').innerText = "Base Fee + 20% Fine";
+        } else {
+            licFine = baseLicenseFee * 0.10;
+            document.getElementById('licFine10').innerText = licFine.toFixed(2);
+            document.getElementById('licFine20').innerText = "0.00";
+            document.getElementById('badgeLic10').className = "badge badge-active";
+            document.getElementById('badgeLic20').className = "badge";
+            document.getElementById('licFormulaLabel').innerText = "Base Fee + 10% Fine";
+        }
+        const totalLicenseFee = baseLicenseFee + licFine;
+        document.getElementById('totalLicenseFee').innerText = totalLicenseFee.toFixed(2);
+
+
+        // 3. Root Permit Calculations (applying modification 2 conditions here as well for parity)
+        const baseRootFee = (rootLateDays * seats * feePerDay) / 365;
+        document.getElementById('baseRootFee').innerText = baseRootFee.toFixed(2);
+
+        let rootFine = 0;
+        if (rootLateDays > 90) {
+            rootFine = baseRootFee * 0.20;
+            document.getElementById('rootFine10').innerText = "0.00";
+            document.getElementById('rootFine20').innerText = rootFine.toFixed(2);
+            document.getElementById('badgeRoot10').className = "badge";
+            document.getElementById('badgeRoot20').className = "badge badge-active";
+            document.getElementById('rootFormulaLabel').innerText = "Base Fee + 20% Fine";
+        } else {
+            rootFine = baseRootFee * 0.10;
+            document.getElementById('rootFine10').innerText = rootFine.toFixed(2);
+            document.getElementById('rootFine20').innerText = "0.00";
+            document.getElementById('badgeRoot10').className = "badge badge-active";
+            document.getElementById('badgeRoot20').className = "badge";
+            document.getElementById('rootFormulaLabel').innerText = "Base Fee + 10% Fine";
+        }
+        const totalRootFee = baseRootFee + rootFine;
+        document.getElementById('totalRootFee').innerText = totalRootFee.toFixed(2);
+
+        // 4. Grand Total
+        const grandTotal = totalLicenseFee + totalRootFee;
+        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    // Attach Event Listeners for Real-Time calculation
+    [licenseEndDateInput, todayDateInput, totalSeatsInput, feePerDayInput, rootLateDaysInput].forEach(input => {
+        input.addEventListener('input', calculate);
+    });
+
+    // Run on initial load
+    calculate();
+</script>
+
+</body>
+</html>
