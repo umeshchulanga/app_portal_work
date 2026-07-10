@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Insurance Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        
+        /* --- Clean Print Tables (Hidden on UI Screen) --- */
+        #cleanDashboardPrintView, #officialBatchLogView {
+            display: none;
+            background: #fff;
+            color: #000;
+        }
+
+        /* --- Official Batch Log Styling --- */
+        #officialBatchLogView {
+            font-family: 'Aparajita', 'Iskoola Pota', 'Segoe UI', serif;
+            padding: 40px;
+        }
+        .sinhala-bold { font-weight: bold; text-align: center; margin: 5px 0; font-size: 22px; }
+        .sinhala-sub { font-weight: bold; text-align: center; margin: 5px 0; font-size: 18px; }
+        .meta-info-row { display: flex; justify-content: space-between; margin-top: 25px; font-size: 16px; }
+        .official-footer { margin-top: 35px; font-size: 16px; line-height: 2; }
+        .dots { border-bottom: 1px dotted #000; display: inline-block; min-width: 200px; }
+        
+        /* Standard Print Table formatting rules */
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .print-table th, .print-table td {
+            border: 1px solid #000 !important;
+            padding: 8px 10px;
+            font-size: 14px;
+            color: #000;
+            background: none !important;
+        }
+        .print-table th { text-align: center; font-weight: bold; background-color: #f2f2f2 !important; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            #mainDashboardView { display: none !important; }
+            body.print-dashboard #cleanDashboardPrintView { display: block !important; padding: 30px; }
+            body.print-official-log #officialBatchLogView { display: block !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="mainDashboardView" class="container-fluid py-4" style="max-width: 1500px;">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <h2 class="h3 mb-0 text-primary fw-bold"><i class="bi bi-car-front-fill me-2"></i>Vehicle Insurance Management System</h2>
+        
+        <div class="file-actions bg-white border rounded p-2 d-flex align-items-center gap-2 shadow-sm">
+            <span class="text-muted small fw-semibold px-2"><i class="bi bi-cloud-arrow-down-fill me-1"></i>Data Sync:</span>
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="linkAndLoadJsonFile()">
+                <i class="bi bi-link-45deg"></i> Link & Load JSON File
+            </button>
+            <button class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="saveToCurrentFile()">
+                <i class="bi bi-floppy"></i> Force Save File
+            </button>
+            <div class="vr mx-1"></div>
+            <span id="fileStatus" class="badge bg-secondary text-white border">Local Cache Mode</span>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0 fw-bold" id="formTitle">Add New Policy</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form id="insuranceForm" onsubmit="saveRecord(event)">
+                        <input type="hidden" id="recordId">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Cover Note Number</label>
+                                <input type="text" class="form-control" id="coverNoteNumber" required placeholder="e.g., 2458283">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Vehicle Number</label>
+                                <input type="text" class="form-control" id="vehicleNumber" required placeholder="e.g., BGN-1007">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold small">Vehicle Type</label>
+                                <select class="form-select" id="vehicleType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="Motor Car">Motor Car</option>
+                                    <option value="Motor Cycle">Motor Cycle</option>
+                                    <option value="Three Wheeler">Three Wheeler</option>
+                                    <option value="Dual Purpose">Dual Purpose</option>
+                                    <option value="Land Vehicle">Land Vehicle</option>
+                                    <option value="Lorry">Lorry</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Issue Date</label>
+                                <input type="date" class="form-control" id="issueDate" required onchange="calculateExpiryFromIssue()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Expiry Date</label>
+                                <input type="date" class="form-control" id="expiryDate" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold small">Full Name</label>
+                                <input type="text" class="form-control" id="name" required placeholder="Insured Name">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold small">Address</label>
+                                <input type="text" class="form-control" id="address" required placeholder="Residential Address">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Mobile Number</label>
+                                <input type="tel" class="form-control" id="mobile" required placeholder="Contact Number">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Identity Card (NIC)</label>
+                                <input type="text" class="form-control" id="nic" required placeholder="e.g., 199423456V">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold small">Insurance Premium Amount (Rs.)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light fw-bold text-muted">Rs.</span>
+                                    <input type="number" class="form-control fw-bold text-dark" id="amount" step="0.01" required placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary flex-grow-1 fw-bold" id="submitBtn">Add Policy</button>
+                            <button type="button" class="btn btn-light border flex-grow-1 fw-semibold text-secondary" onclick="resetForm()">Clear</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h5 class="card-title mb-0 fw-bold text-secondary"><i class="bi bi-shield-check me-2 text-success"></i>Active Insurance Policies</h5>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onclick="triggerDashboardPrint()">
+                            <i class="bi bi-printer"></i> Print Dashboard Table
+                        </button>
+                        <button class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1" onclick="triggerOfficialLogPrint()">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Print Official Batch Log
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="p-3 bg-light border-bottom">
+                        <div class="row g-2 align-items-end flex-nowrap overflow-auto" style="min-width: 650px;">
+                            <div class="col flex-grow-1">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-nowrap">Search Text</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="searchBar" class="form-control border-start-0" placeholder="Name, Vehicle, Cover Note, NIC..." oninput="renderTable()">
+                                </div>
+                            </div>
+                            <div class="col-auto" style="width: 140px;">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-nowrap">Filter Target</label>
+                                <select id="dateTarget" class="form-select form-select-sm" onchange="renderTable()">
+                                    <option value="issueDate">Issue Date</option>
+                                    <option value="expiryDate">Expiry Date</option>
+                                </select>
+                            </div>
+                            <div class="col-auto" style="width: 145px;">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-nowrap">From Date</label>
+                                <input type="date" id="startDate" class="form-control form-control-sm" onchange="renderTable()">
+                            </div>
+                            <div class="col-auto" style="width: 145px;">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-nowrap">To Date</label>
+                                <input type="date" id="endDate" class="form-control form-control-sm" onchange="renderTable()">
+                            </div>
+                            <div class="col-auto" style="width: 42px;">
+                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearFilters()" title="Reset Filters">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-nowrap text-sm">
+                            <thead class="table-light text-uppercase fs-7 text-secondary">
+                                <tr>
+                                    <th scope="col" class="ps-4">Cover Note & Vehicle</th>
+                                    <th scope="col">Timeline Dates</th>
+                                    <th scope="col">Insured Profile</th>
+                                    <th scope="col">NIC / Mobile</th>
+                                    <th scope="col" class="text-end">Amount</th>
+                                    <th scope="col" class="text-center pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="insuranceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="cleanDashboardPrintView">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+        <div>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Active Insurance Policies Report</p>
+        </div>
+        <div style="text-align: right; font-size: 13px;">
+            <div><strong>Generated Date:</strong> <span id="dashPrintDate"></span></div>
+        </div>
+    </div>
+
+    <div style="background-color: #f9f9f9; border: 1px solid #ddd; padding: 10px; font-size: 12px; margin-bottom: 15px; border-radius: 4px;">
+        <strong style="font-size: 13px; display: block; margin-bottom: 4px; color: #333;">Active Filter Criteria:</strong>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+            <div><strong>Search Query:</strong> <span id="printCriteriaSearch">None</span></div>
+            <div><strong>Target Property:</strong> <span id="printCriteriaTarget">Issue Date</span></div>
+            <div><strong>From Date:</strong> <span id="printCriteriaFrom">All Time</span></div>
+            <div><strong>To Date:</strong> <span id="printCriteriaTo">All Time</span></div>
+        </div>
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No.</th>
+                <th style="width: 15%;">Cover Note / Vehicle</th>
+                <th style="width: 15%;">Dates (Issue/Exp)</th>
+                <th style="width: 30%;">Insured Holder & Address</th>
+                <th style="width: 20%;">Identity / Contact</th>
+                <th style="width: 15%;">Premium (Rs.)</th>
+            </tr>
+        </thead>
+        <tbody id="cleanDashboardPrintTableBody"></tbody>
+    </table>
+</div>
+
+<div id="officialBatchLogView">
+    <div class="sinhala-bold">කෘෂිකාර්මික හා ගොවිජන රක්ෂණ මණ්ඩලය</div>
+    <div class="sinhala-sub">තෙවන පාර්ශවීය රථවාහන රක්ෂණ යෝජනා ක්‍රමය</div>
+    
+    <div class="meta-info-row">
+        <div>ගොවිජන සේවා බල ප්‍රදේශය : <span class="dots" style="min-width: 250px;"></span></div>
+        <div>නිකුත් කළ අංකය/නම : <span class="dots" style="min-width: 200px;"></span></div>
+    </div>
+    <div class="meta-info-row" style="margin-top: 10px; margin-bottom: 15px;">
+        <div>දිනය : <span id="logPrintDate" class="dots" style="min-width: 150px;"></span></div>
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">අනු අංකය</th>
+                <th style="width: 15%;">දිනය</th>
+                <th style="width: 22%;">තාවකාලික ආවරණ අංකය</th>
+                <th style="width: 20%;">වාහන අංකය</th>
+                <th style="width: 15%;">ගෙවා ඇති මුදල</th>
+                <th style="width: 20%;">වෙනත් කරුණු</th>
+            </tr>
+        </thead>
+        <tbody id="officialLogTableBody"></tbody>
+    </table>
+
+    <div class="official-footer">
+        <p>ඉහත සදහන් මුදල් අංකයට <b>335100280008791</b> දරණ ගිණුමට <span class="dots" style="min-width:120px;"></span> දින බැංකු ගත කරන ලදි. මුදල් බැර පත මේ සමග අමුණා ඇත.</p>
+        <br>
+        <p>නිලධාරී / නියෝජිත අත්සන : <span class="dots" style="min-width: 350px;"></span></p>
+        <p style="margin-top: 15px;">නිවැරදි බව පරීක්ෂා කර අයදුම්පත් භාරගත් නිලධාරියාගේ අත්සන හා දිනය : <span class="dots" style="min-width: 450px;"></span></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let insuranceRecords = [];
+    let fileHandle = null; // Stores file reference for direct background save operations
+
+    // --- INSTANT PERSISTENCE LAYERING ENGINE ---
+    function initializeDatabase() {
+        const localData = localStorage.getItem('insurance_cache_db');
+        if (localData) {
+            try {
+                insuranceRecords = JSON.parse(localData);
+            } catch(e) {
+                insuranceRecords = [];
+            }
+        }
+    }
+
+    function syncToLocalMemory() {
+        localStorage.setItem('insurance_cache_db', JSON.stringify(insuranceRecords));
+        // Auto-trigger rewrite to file if a handle has been linked
+        if (fileHandle) {
+            silentSaveToFile();
+        }
+    }
+
+    // --- HELPER: SET SYSTEM AUTO DATE METRICS ---
+    function applyDefaultDates() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        
+        document.getElementById('issueDate').value = todayStr;
+        calculateExpiryFromIssue();
+    }
+
+    function calculateExpiryFromIssue() {
+        const issueValue = document.getElementById('issueDate').value;
+        if (!issueValue) return;
+
+        const issueDateObj = new Date(issueValue);
+        issueDateObj.setDate(issueDateObj.getDate() + 90);
+
+        const expYyyy = issueDateObj.getFullYear();
+        const expMm = String(issueDateObj.getMonth() + 1).padStart(2, '0');
+        const expDd = String(issueDateObj.getDate()).padStart(2, '0');
+        
+        document.getElementById('expiryDate').value = `${expYyyy}-${expMm}-${expDd}`;
+    }
+
+    // --- CRUD ENGINE: CONFIGURE CORE OPERATIONS ---
+    function saveRecord(event) {
+        event.preventDefault();
+        const id = document.getElementById('recordId').value;
+        const record = {
+            id: id ? parseInt(id) : Date.now(),
+            coverNoteNumber: document.getElementById('coverNoteNumber').value.trim(),
+            vehicleNumber: document.getElementById('vehicleNumber').value.trim().toUpperCase(),
+            vehicleType: document.getElementById('vehicleType').value,
+            issueDate: document.getElementById('issueDate').value,
+            expiryDate: document.getElementById('expiryDate').value,
+            name: document.getElementById('name').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            mobile: document.getElementById('mobile').value.trim(),
+            nic: document.getElementById('nic').value.trim(),
+            amount: parseFloat(document.getElementById('amount').value).toFixed(2)
+        };
+
+        if (id) {
+            const index = insuranceRecords.findIndex(r => r.id === parseInt(id));
+            if (index !== -1) insuranceRecords[index] = record;
+        } else {
+            insuranceRecords.push(record);
+        }
+        
+        syncToLocalMemory(); // Instant implicit commit (triggers silent file update)
+        resetForm();
+        renderTable();
+    }
+
+    function getFilteredRecords() {
+        const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+        const dateTargetKey = document.getElementById('dateTarget').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        return insuranceRecords.filter(record => {
+            const matchesText = record.name.toLowerCase().includes(searchTerm) || 
+                                record.vehicleNumber.toLowerCase().includes(searchTerm) ||
+                                (record.coverNoteNumber && record.coverNoteNumber.toLowerCase().includes(searchTerm)) ||
+                                record.nic.toLowerCase().includes(searchTerm) ||
+                                (record.vehicleType && record.vehicleType.toLowerCase().includes(searchTerm));
+            
+            const targetRecordDate = record[dateTargetKey];
+            let matchesStartDate = startDate ? (targetRecordDate >= startDate) : true;
+            let matchesEndDate = endDate ? (targetRecordDate <= endDate) : true;
+
+            return matchesText && matchesStartDate && matchesEndDate;
+        });
+    }
+
+    function renderTable() {
+        const tableBody = document.getElementById('insuranceTableBody');
+        tableBody.innerHTML = '';
+        const filtered = getFilteredRecords();
+
+        if (filtered.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted p-4">No records match your criteria.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(record => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="ps-4">
+                    <div class="fw-bold text-dark"><span class="badge bg-light text-secondary border me-1">CN</span>${record.coverNoteNumber || 'N/A'}</div>
+                    <div class="small fw-semibold text-primary"><i class="bi bi-hash"></i>${record.vehicleNumber}</div>
+                    <div class="text-muted fs-7"><i class="bi bi-car-front me-1"></i>${record.vehicleType || 'N/A'}</div>
+                </td>
+                <td>
+                    <div class="fs-7 text-dark"><span class="text-muted small me-1">Iss:</span> <b>${record.issueDate}</b></div>
+                    <div class="fs-7 text-danger"><span class="text-muted small me-1">Exp:</span> <b>${record.expiryDate}</b></div>
+                </td>
+                <td>
+                    <div class="fw-bold text-dark">${record.name}</div>
+                    <div class="text-muted fs-7 text-truncate" style="max-width: 200px;" title="${record.address}"><i class="bi bi-geo-alt me-1"></i>${record.address}</div>
+                </td>
+                <td>
+                    <div class="small"><span class="text-muted">NIC:</span> <b>${record.nic}</b></div>
+                    <div class="small text-secondary"><i class="bi bi-telephone me-1"></i>${record.mobile}</div>
+                </td>
+                <td class="text-end fw-bold text-dark pe-3">
+                    Rs. ${parseFloat(record.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </td>
+                <td class="text-center pe-4">
+                    <div class="d-flex justify-content-center gap-1">
+                        <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="editRecord(${record.id})" title="Edit Record">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="deleteRecord(${record.id})" title="Delete Record">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function editRecord(id) {
+        const record = insuranceRecords.find(r => r.id === id);
+        if (!record) return;
+        document.getElementById('recordId').value = record.id;
+        document.getElementById('coverNoteNumber').value = record.coverNoteNumber || '';
+        document.getElementById('vehicleNumber').value = record.vehicleNumber;
+        document.getElementById('vehicleType').value = record.vehicleType || '';
+        document.getElementById('issueDate').value = record.issueDate;
+        document.getElementById('expiryDate').value = record.expiryDate;
+        document.getElementById('name').value = record.name;
+        document.getElementById('address').value = record.address;
+        document.getElementById('mobile').value = record.mobile;
+        document.getElementById('nic').value = record.nic;
+        document.getElementById('amount').value = record.amount;
+
+        document.getElementById('formTitle').innerText = "Edit Policy Mode";
+        document.getElementById('submitBtn').innerText = "Update Policy";
+        document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function deleteRecord(id) {
+        if (confirm("Are you sure you want to completely remove this insurance record?")) {
+            insuranceRecords = insuranceRecords.filter(r => r.id !== id);
+            syncToLocalMemory(); // Instant implicit commit (triggers silent file update)
+            renderTable();
+            if (document.getElementById('recordId').value == id) resetForm();
+        }
+    }
+
+    // --- FORM MANAGEMENT ---
+    function resetForm() {
+        document.getElementById('insuranceForm').reset();
+        document.getElementById('recordId').value = '';
+        document.getElementById('formTitle').innerText = "Add New Policy";
+        document.getElementById('submitBtn').innerText = "Add Policy";
+        applyDefaultDates(); 
+    }
+
+    function clearFilters() {
+        document.getElementById('searchBar').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        renderTable();
+    }
+
+    // --- PRINT MANAGER METHODS ---
+    function triggerDashboardPrint() {
+        const printBody = document.getElementById('cleanDashboardPrintTableBody');
+        printBody.innerHTML = '';
+        
+        const sourceData = getFilteredRecords();
+        let grandTotal = 0;
+
+        const activeSearch = document.getElementById('searchBar').value.trim();
+        const activeTarget = document.getElementById('dateTarget').value === 'issueDate' ? 'Issue Date' : 'Expiry Date';
+        const activeFrom = document.getElementById('startDate').value;
+        const activeTo = document.getElementById('endDate').value;
+
+        document.getElementById('printCriteriaSearch').innerText = activeSearch ? `"${activeSearch}"` : 'None';
+        document.getElementById('printCriteriaTarget').innerText = activeTarget;
+        document.getElementById('printCriteriaFrom').innerText = activeFrom ? activeFrom : 'All Time';
+        document.getElementById('printCriteriaTo').innerText = activeTo ? activeTo : 'All Time';
+
+        if (sourceData.length === 0) {
+            printBody.innerHTML = `<tr><td colspan="6" class="text-center">No active policies found matching current UI filters.</td></tr>`;
+        }
+
+        sourceData.forEach((item, index) => {
+            const amt = parseFloat(item.amount) || 0;
+            grandTotal += amt;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="text-center">${index + 1}</td>
+                <td>
+                    <strong>CN:</strong> ${item.coverNoteNumber || 'N/A'}<br>
+                    <strong>No:</strong> ${item.vehicleNumber} (${item.vehicleType || 'N/A'})
+                </td>
+                <td class="text-center" style="font-size: 12px;">
+                    Iss: ${item.issueDate}<br>Exp: ${item.expiryDate}
+                </td>
+                <td>
+                    <strong>${item.name}</strong><br>
+                    <span style="font-size: 12px; color: #444;">${item.address}</span>
+                </td>
+                <td>
+                    NIC: ${item.nic}<br>Mob: ${item.mobile}
+                </td>
+                <td class="text-right" style="font-weight: bold;">
+                    ${amt.toFixed(2)}
+                </td>
+            `;
+            printBody.appendChild(row);
+        });
+
+        const summaryRow = document.createElement('tr');
+        summaryRow.innerHTML = `
+            <td colspan="5" class="text-right" style="font-weight: bold; font-size: 15px;">Grand Total Amount (Rs.):</td>
+            <td class="text-right" style="font-weight: bold; font-size: 15px; border-bottom: 4px double #000 !important;">${grandTotal.toFixed(2)}</td>
+        `;
+        printBody.appendChild(summaryRow);
+
+        const today = new Date();
+        document.getElementById('dashPrintDate').innerText = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+
+        document.body.className = "print-dashboard";
+        window.print();
+    }
+
+    function triggerOfficialLogPrint() {
+        const logBody = document.getElementById('officialLogTableBody');
+        logBody.innerHTML = '';
+        
+        const sourceData = getFilteredRecords();
+        let totalAmount = 0;
+
+        if (sourceData.length === 0) {
+            logBody.innerHTML = `<tr><td colspan="6" class="text-center">දත්ත කිසිවක් හමු නොවීය / No matching data found for selected filters.</td></tr>`;
+        }
+
+        sourceData.forEach((item, index) => {
+            const row = document.createElement('tr');
+            const dateObj = new Date(item.issueDate);
+            const formattedDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear()}`;
+            const amt = parseFloat(item.amount) || 0;
+            totalAmount += amt;
+
+            row.innerHTML = `
+                <td class="text-center">${index + 1}</td>
+                <td class="text-center">${formattedDate}</td>
+                <td class="text-center">${item.coverNoteNumber || ''}</td>
+                <td class="text-center"><b>${item.vehicleNumber}</b></td>
+                <td class="text-right">${amt.toFixed(2)}</td>
+                <td></td>
+            `;
+            logBody.appendChild(row);
+        });
+
+        const totalRow = document.createElement('tr');
+        totalRow.innerHTML = `
+            <td colspan="4" class="text-center" style="font-weight:bold; font-size:16px; letter-spacing: 2px;">එකතුව</td>
+            <td class="text-right" style="font-weight:bold; font-size:16px;">${totalAmount.toFixed(2)}</td>
+            <td></td>
+        `;
+        logBody.appendChild(totalRow);
+
+        const today = new Date();
+        document.getElementById('logPrintDate').innerText = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+
+        document.body.className = "print-official-log";
+        window.print();
+    }
+
+    // --- MODERN FILE SYSTEM ACCESS API INTEGRATION ---
+    
+    // 1. Link & Load using File System Pickers
+    async function linkAndLoadJsonFile() {
+        if (!('showOpenFilePicker' in window)) {
+            alert("Your browser does not fully support the File System Access API. Please use Chrome, Edge, or Opera for auto-saving capability.");
+            return;
+        }
+
+        try {
+            const [handle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'JSON Files',
+                    accept: { 'application/json': ['.json'], 'text/plain': ['.txt'] }
+                }],
+                multiple: false
+            });
+
+            fileHandle = handle;
+            const file = await fileHandle.getFile();
+            const text = await file.text();
+            
+            const parsedData = JSON.parse(text);
+            if (Array.isArray(parsedData)) {
+                insuranceRecords = parsedData;
+                
+                // Track update badge status
+                const statusBadge = document.getElementById('fileStatus');
+                statusBadge.innerText = `Synced: ${file.name}`;
+                statusBadge.className = "badge bg-success text-white border";
+                
+                // Commit content instantly to memory layer
+                localStorage.setItem('insurance_cache_db', JSON.stringify(insuranceRecords));
+                renderTable();
+                alert(`Successfully linked and loaded: ${file.name}\nChanges will auto-save to this file!`);
+            } else {
+                alert("Invalid JSON format. Expected an array of objects.");
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error(err);
+                alert("Failed to read the selected file structures.");
+            }
+        }
+    }
+
+    // 2. Silent background pipeline runner
+    async function silentSaveToFile() {
+        if (!fileHandle) return;
+        try {
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(insuranceRecords, null, 4));
+            await writable.close();
+            console.log("File system changes successfully flushed to desk file.");
+        } catch (err) {
+            console.error("Auto-sync file writing failed:", err);
+            // Revert status layout context to alert operational degradation
+            const statusBadge = document.getElementById('fileStatus');
+            statusBadge.innerText = "Write Permission Required";
+            statusBadge.className = "badge bg-danger text-white border";
+        }
+    }
+
+    // 3. Fallback explicit force-saver context button rule
+    async function saveToCurrentFile() {
+        if (!fileHandle) {
+            // Traditional download fallback if no file handle is linked
+            if (insuranceRecords.length === 0) { alert("No data to save."); return; }
+            const today = new Date();
+            const filename = `insurance_database_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.json`;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(insuranceRecords, null, 4));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", filename);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            return;
+        }
+
+        // Request explicit user write access if expired or detached
+        try {
+            await silentSaveToFile();
+            alert("File explicitly updated successfully!");
+            const statusBadge = document.getElementById('fileStatus');
+            statusBadge.innerText = `Synced: ${fileHandle.name}`;
+            statusBadge.className = "badge bg-success text-white border";
+        } catch(e) {
+            alert("Could not complete explicit file save verification.");
+        }
+    }
+
+    initializeDatabase();
+    applyDefaultDates();
+    renderTable();
+</script>
+</body>
+</html>

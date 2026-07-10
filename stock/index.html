@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Register — Licence Serial Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Third Party Scripts for Document Generation -->
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<style>
+  :root{
+    --paper:#ECE3CF;
+    --paper-light:#F8F3E4;
+    --ink:#20293A;
+    --ink-soft:#4B5468;
+    --oxblood:#7C2733;
+    --ledger-green:#54654A;
+    --brass:#A9791F;
+    --line:#C9BC9C;
+    --danger:#7C2733;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.35), transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- Header / letterhead ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    border-bottom:3px double var(--ink);
+    padding-bottom:20px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .stamp{
+    flex:0 0 auto;
+    width:88px;height:88px;
+    border-radius:50%;
+    border:2.5px solid var(--oxblood);
+    color:var(--oxblood);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    transform:rotate(-6deg);
+    font-family:'Fraunces', serif;
+    opacity:0.92;
+  }
+  .stamp::before{
+    content:'';
+    position:absolute;inset:6px;
+    border:1px solid var(--oxblood);
+    border-radius:50%;
+  }
+  .stamp-text{
+    font-size:9px;
+    letter-spacing:2px;
+    text-align:center;
+    line-height:1.5;
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .title-block{flex:1 1 320px;}
+  h1{
+    font-family:'Fraunces', serif;
+    font-size:clamp(26px,3.4vw,38px);
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:14px;
+    letter-spacing:0.02em;
+  }
+  .header-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-left:auto;
+    align-items: center;
+  }
+
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    border-radius:var(--radius);
+    border:1px solid var(--ink);
+    background:var(--paper-light);
+    color:var(--ink);
+    padding:9px 15px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, transform .05s ease;
+  }
+  button:hover{background:var(--ink);color:var(--paper-light);}
+  button:active{transform:translateY(1px);}
+  button.primary{background:var(--oxblood);color:var(--paper-light);border-color:var(--oxblood);}
+  button.primary:hover{background:#5e1c26;}
+  button.ghost{background:transparent;}
+  button.small{padding:5px 10px;font-size:12px;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button.danger-outline{border-color:var(--danger);color:var(--danger);background:transparent;}
+  button.danger-outline:hover{background:var(--danger);color:#fff;}
+
+  .conn-status{
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;align-items:center;gap:6px;
+    margin-top:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#9a9a86;}
+  .dot.on{background:var(--ledger-green);}
+
+  /* ---------- Template Input Styling ---------- */
+  .template-box {
+    background: #E5DCB8;
+    border: 1px dashed var(--ink-soft);
+    padding: 8px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius);
+  }
+  .template-box label {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--oxblood);
+  }
+
+  /* ---------- Summary strip ---------- */
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:30px;
+  }
+  .summary .card{
+    background:var(--paper-light);
+    padding:16px 18px;
+  }
+  .summary .card .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:24px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .summary .card .lbl{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .summary .card.accent .num{color:var(--oxblood);}
+  .summary .card.accent2 .num{color:var(--ledger-green);}
+
+  /* ---------- Section heading ---------- */
+  .section-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:12px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:8px;
+  }
+  .section-head h2{
+    font-family:'Fraunces', serif;
+    font-size:19px;font-weight:600;margin:0;
+  }
+  .eyebrow{
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
+  }
+
+  /* ---------- Ledger table ---------- */
+  .ledger-scroll{overflow-x:auto;border:1px solid var(--line);background:var(--paper-light);}
+  table{border-collapse:collapse;width:100%;min-width:920px;font-size:13px;}
+  thead tr.group-row th{
+    font-family:'IBM Plex Sans';
+    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--paper-light);
+    background:var(--ink);
+    padding:8px 10px;
+    text-align:center;
+    border-left:1px solid rgba(255,255,255,.15);
+  }
+  thead tr.col-row th{
+    font-size:11px;color:var(--ink-soft);
+    padding:6px 10px;
+    text-align:right;
+    border-bottom:1px solid var(--line);
+    font-weight:500;
+    background:#F1EAD9;
+  }
+  thead tr.col-row th:first-child, thead tr.col-row th:nth-child(2){text-align:left;}
+  tbody td{
+    padding:9px 10px;
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  tbody td.month-cell{
+    font-family:'IBM Plex Sans';
+    text-align:left;
+    font-weight:600;
+  }
+  tbody td.actions-cell{text-align:center; display:flex; gap: 4px; justify-content: center;}
+  tbody tr:hover td{background:#F4EEDD;}
+  .grp-divider{border-left:1px solid var(--line);}
+  .neg{color:var(--danger);font-weight:600;}
+  .empty-row td{
+    text-align:center;color:var(--ink-soft);
+    font-family:'IBM Plex Sans';
+    padding:26px;
+  }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(32,41,58,.45);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:40px 16px;overflow-y:auto;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--paper-light);
+    border:1px solid var(--ink);
+    max-width:560px;width:100%;
+    padding:26px 28px 24px;
+    box-shadow:6px 6px 0 rgba(32,41,58,.12);
+  }
+  .modal h3{
+    font-family:'Fraunces', serif;font-size:20px;margin:0 0 4px;font-weight:600;
+  }
+  .modal .modal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+  input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:var(--radius);
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--ledger-green);outline-offset:1px;}
+  input[type=text]#f-month{font-family:'IBM Plex Sans';}
+  .calc-preview{
+    margin-top:14px;padding:12px 14px;
+    background:#F1EAD9;border:1px dashed var(--line);
+    font-size:12.5px;line-height:1.7;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .calc-preview b{font-family:'IBM Plex Sans';font-weight:600;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .err-text{color:var(--danger);font-size:12px;margin-top:8px;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper-light);
+    padding:11px 20px;border-radius:var(--radius);
+    font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:100;
+    display:flex;align-items:center;gap:8px;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #toast.err{background:var(--oxblood);}
+
+  footer{
+    margin-top:40px;text-align:center;font-size:11.5px;color:var(--ink-soft);
+  }
+
+  @media (max-width:640px){
+    .field-row{grid-template-columns:1fr;}
+    header{flex-direction:column;align-items:flex-start;}
+    .header-actions{margin-left:0;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="stamp"><div class="stamp-text">STOCK<br>REGISTER<br>OFFICIAL</div></div>
+    <div class="title-block">
+      <h1>Licence Stock Register</h1>
+      <div class="subtitle">Monthly serial-number ledger for issued licence books</div>
+      <div class="conn-status"><span class="dot" id="conn-dot"></span><span id="conn-label">Working from browser storage — connect a JSON file to save permanently</span></div>
+    </div>
+    <div class="header-actions">
+      <div class="template-box">
+        <label for="template-upload">📄 Load Word Template</label>
+        <input type="file" id="template-upload" accept=".docx" style="display:none;">
+        <span id="template-status" style="font-size: 11px; color: var(--ink-soft);">No template loaded</span>
+      </div>
+      <button id="btn-connect" class="ghost">Connect data file</button>
+      <button id="btn-new" class="primary">+ New entry</button>
+    </div>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="section-head">
+    <h2>Ledger history</h2>
+    <span class="eyebrow" id="entry-count">0 entries</span>
+  </div>
+
+  <div class="ledger-scroll">
+    <table>
+      <thead>
+        <tr class="group-row">
+          <th style="background:var(--ink);border-left:none;">&nbsp;</th>
+          <th colspan="3">Last month</th>
+          <th colspan="3">This month</th>
+          <th colspan="3">Next month</th>
+          <th style="background:var(--ink);">&nbsp;</th>
+        </tr>
+        <tr class="col-row">
+          <th>Month</th>
+          <th>From</th><th>To</th><th>Stock left</th>
+          <th>From</th><th>To</th><th>Issued</th>
+          <th>From</th><th>To</th><th>Stock left</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+  </div>
+
+  <footer>Data is stored as plain JSON — nothing leaves this browser. Best supported in Chrome or Edge for live file saving.</footer>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modal-title">New month entry</h3>
+    <div class="modal-sub">Serial ranges are calculated automatically from what you enter below.</div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="f-month">Month</label>
+        <input type="month" id="f-month">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-ceiling">Last serial no. of stock</label>
+        <input type="number" id="f-ceiling" placeholder="e.g. 2100000">
+      </div>
+      <div class="field">
+        <label for="f-entering">Ending serial no. of last month</label>
+        <input type="number" id="f-entering" placeholder="e.g. 2092872">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-valid">Issued valid licences</label>
+        <input type="number" id="f-valid" placeholder="e.g. 958">
+      </div>
+      <div class="field">
+        <label for="f-damage">Issued damaged licences</label>
+        <input type="number" id="f-damage" placeholder="e.g. 2">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field full">
+        <label for="f-damage-numbers">Damaged Licence Numbers</label>
+        <input type="text" id="f-damage-numbers" placeholder="e.g. 2092104, 2092115">
+      </div>
+    </div>
+
+    <div class="calc-preview" id="calc-preview"></div>
+    <div class="err-text" id="form-err"></div>
+
+    <div class="modal-actions">
+      <button class="ghost" id="btn-doc" style="display:none; border-color: var(--brass); color: var(--brass);">Generate Document</button>
+      <button class="ghost" id="btn-cancel">Cancel</button>
+      <button class="primary" id="btn-save">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   Each record:
+   { id, month:"2026-07", ceiling, entering, valid, damage, damageNumbers, updatedAt }
+   ============================================================ */
+
+let records = [];
+let fileHandle = null;
+let editingId = null;
+let templateArrayBuffer = null;
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Template Reader ---------- */
+$('template-upload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    templateArrayBuffer = event.target.result;
+    $('template-status').textContent = file.name;
+    toast('Word Template loaded successfully!');
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+/* ---------- derived calc ---------- */
+function derive(r){
+  const issuedAmount = (Number(r.valid)||0) + (Number(r.damage)||0);
+  const thisFrom = Number(r.entering);
+  const thisTo   = thisFrom + issuedAmount - 1;
+  const lastFrom = Number(r.entering);
+  const lastTo   = Number(r.ceiling);
+  const lastLeft = lastTo - lastFrom + 1;
+  const nextFrom = thisTo + 1;
+  const nextTo   = Number(r.ceiling);
+  const nextLeft = nextTo - nextFrom + 1;
+  return {issuedAmount, thisFrom, thisTo, lastFrom, lastTo, lastLeft, nextFrom, nextTo, nextLeft};
+}
+
+function fmt(n){
+  if(n===undefined || n===null || Number.isNaN(n)) return '—';
+  return n.toLocaleString('en-US');
+}
+/*
+function monthLabel(m){
+  if(!m) return '—';
+  const [y,mo] = m.split('-');
+  const d = new Date(Number(y), Number(mo)-1, 1);
+  return d.toLocaleDateString('en-US',{month:'long', year:'numeric'});
+}
+*/
+function monthLabel(m){
+  if(!m) return '—';
+  const [y, mo] = m.split('-');
+  const monthIndex = Number(mo) - 1;
+  return `${y} ${sinhalaMonths[monthIndex]}`;
+}
+
+
+/*
+
+// Helper to get the last date string of a given Year and Month
+function getMonthEndDate(year, month) {
+  // Setting day to 0 gives the last day of the prior month. 
+  // So passing month (1-indexed) with day 0 gives the last day of *this* month.
+  const date = new Date(Number(year), Number(month), 0);
+  return date.toLocaleDateString('si-LK', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function getPriorMonthEndDate(year, month) {
+  // Passing month - 1 with day 0 gives the last day of the *previous* month.
+  const date = new Date(Number(year), Number(month) - 1, 0);
+  return date.toLocaleDateString('si-LK', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+*/
+
+
+// Sinhala month names mapping array
+const sinhalaMonths = [
+  "ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", 
+  "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"
+];
+
+function getMonthEndDate(year, month) {
+  // Setting day to 0 gives the last day of that exact month parameter index
+  const date = new Date(Number(year), Number(month), 0);
+  const day = date.getDate();
+  const monthName = sinhalaMonths[date.getMonth()];
+  const fullYear = date.getFullYear();
+  
+  // Format matching: "2026 ජූලි 31"
+  return `${fullYear} ${monthName} ${day}`;
+}
+
+function getPriorMonthEndDate(year, month) {
+  // Passing month - 1 with day 0 gives the last day of the previous month
+  const date = new Date(Number(year), Number(month) - 1, 0);
+  const day = date.getDate();
+  const monthName = sinhalaMonths[date.getMonth()];
+  const fullYear = date.getFullYear();
+  
+  // Format matching: "2026 ජූනි 30"
+  return `${fullYear} ${monthName} ${day}`;
+}
+
+
+
+/* ---------- Document Generation via Docxtemplater ---------- */
+function generateWordDocument(recordId) {
+  if (!templateArrayBuffer) {
+    toast('Please upload a Word Template file first!', true);
+    return;
+  }
+  const r = records.find(x => x.id === recordId);
+  if (!r) return;
+
+  try {
+    const d = derive(r);
+    const zip = new PizZip(templateArrayBuffer);
+    const doc = new window.docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    // Formatting date formats for presentation labels
+    const currentMonthLabel = monthLabel(r.month);
+	
+	// --- NEW DATE CALCULATIONS ---
+    const [yearStr, monthStr] = r.month.split('-'); // Splits "2026-07" into ["2026", "07"]
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+
+    const exactThisMonthEndDate = getMonthEndDate(year, month);       // e.g., "July 31, 2026"
+    const exactLastMonthEndDate = getPriorMonthEndDate(year, month);   // e.g., "June 30, 2026"
+	
+	
+    
+    // Setting up variables to feed directly matching the placeholders in your word document format
+    doc.render({
+      office: "ප්‍රාදේශීය ලේකම් කාර්යාලය",
+      month: currentMonthLabel,
+      lastMonthDate: exactLastMonthEndDate,
+      nextMonthDate: exactThisMonthEndDate,
+      lastMonthFrom: fmt(d.lastFrom),
+      lastMonthTo: fmt(d.lastTo),
+      lastMonthTotalStock: fmt(d.lastLeft),
+      thisMonthFrom: fmt(d.thisFrom),
+      thisMonthTo: fmt(d.thisTo),
+      thisMonthTotalStock: fmt(d.issuedAmount),
+      damageLiecnceNumbers: r.damageNumbers || '—',
+      damageLicenceCount: fmt(r.damage),
+      nextMonthFrom: fmt(d.nextFrom),
+      nextMonthTo: fmt(d.nextTo),
+      nextMonthTotalStock: fmt(d.nextLeft),
+      TotalValidLicence: fmt(r.valid)
+    });
+
+    const out = doc.getZip().generate({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    
+    saveAs(out, `Licence_Stock_Report_${r.month}.docx`);
+    toast('Word Document generated successfully!');
+  } catch (error) {
+    console.error(error);
+    toast('Error generating document template.', true);
+  }
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, isErr=false){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = isErr ? 'show err' : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = t.className.replace('show',''); }, 2600);
+}
+
+/* ---------- persistence: IndexedDB for the file handle ---------- */
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open('stock-register-db', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, val){
+  const db = await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction('handles','readwrite');
+    tx.objectStore('handles').put(val, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction('handles','readonly');
+    const req = tx.objectStore('handles').get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+const supportsFS = 'showSaveFilePicker' in window;
+
+async function tryReconnect(){
+  if(!supportsFS) return;
+  try{
+    const handle = await idbGet('stockRegisterFile');
+    if(!handle) return;
+    const perm = await handle.queryPermission({mode:'readwrite'});
+    if(perm === 'granted'){
+      fileHandle = handle;
+      await loadFromFile();
+      updateConnStatus();
+    } else {
+      fileHandle = handle;
+      updateConnStatus(true);
+    }
+  }catch(e){ /* ignore */ }
+}
+
+function updateConnStatus(needsPermission=false){
+  const dot = $('conn-dot');
+  const label = $('conn-label');
+  if(fileHandle && !needsPermission){
+    dot.classList.add('on');
+    label.textContent = `Connected — saving live to "${fileHandle.name}"`;
+  } else if(fileHandle && needsPermission){
+    dot.classList.remove('on');
+    label.textContent = `File "${fileHandle.name}" found — click "Connect data file" to resume saving`;
+  } else {
+    dot.classList.remove('on');
+    label.textContent = supportsFS
+      ? 'Working from browser storage — connect a JSON file to save permanently'
+      : 'This browser can\u2019t auto-save files — using browser storage (export JSON to back up)';
+  }
+}
+
+async function loadFromFile(){
+  try{
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    records = text.trim() ? JSON.parse(text) : [];
+  }catch(e){
+    toast('Could not read the connected file', true);
+  }
+}
+
+async function writeToFile(){
+  if(!fileHandle) { localStorage.setItem('stockRegisterRecords', JSON.stringify(records)); return; }
+  try{
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(records, null, 2));
+    await writable.close();
+  }catch(e){
+    toast('Live save failed — check file permissions', true);
+  }
+}
+
+$('btn-connect').addEventListener('click', async ()=>{
+  if(!supportsFS){
+    toast('Your browser doesn\u2019t support live file saving. Use Export/Import instead.', true);
+    return;
+  }
+  try{
+    let handle;
+    if(fileHandle){
+      const perm = await fileHandle.requestPermission({mode:'readwrite'});
+      if(perm === 'granted'){ handle = fileHandle; }
+    }
+    if(!handle){
+      const choice = confirm('Click OK to open an existing stock-register.json file, or Cancel to create a new one.');
+      if(choice){
+        [handle] = await window.showOpenFilePicker({
+          types:[{description:'JSON', accept:{'application/json':['.json']}}]
+        });
+      } else {
+        handle = await window.showSaveFilePicker({
+          suggestedName:'stock-register.json',
+          types:[{description:'JSON', accept:{'application/json':['.json']}}]
+        });
+      }
+    }
+    fileHandle = handle;
+    await idbSet('stockRegisterFile', handle);
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    if(text.trim()){
+      records = JSON.parse(text);
+    } else {
+      await writeToFile();
+    }
+    updateConnStatus();
+    renderAll();
+    toast('Connected. All changes now save straight to this file.');
+  }catch(e){
+    if(e.name !== 'AbortError') toast('Could not connect the file', true);
+  }
+});
+
+/* ---------- render ---------- */
+function sortedRecords(){
+  return [...records].sort((a,b)=> a.month.localeCompare(b.month));
+}
+
+function renderSummary(){
+  const s = $('summary');
+  const list = sortedRecords();
+  const latest = list[list.length-1];
+  if(!latest){
+    s.innerHTML = `
+      <div class="card"><div class="num">—</div><div class="lbl">Stock ceiling</div></div>
+      <div class="card"><div class="num">—</div><div class="lbl">Current stock left</div></div>
+      <div class="card accent"><div class="num">—</div><div class="lbl">Issued this month</div></div>
+      <div class="card accent2"><div class="num">—</div><div class="lbl">Valid / Damaged</div></div>`;
+    return;
+  }
+  const d = derive(latest);
+  s.innerHTML = `
+    <div class="card"><div class="num">${fmt(latest.ceiling)}</div><div class="lbl">Stock ceiling</div></div>
+    <div class="card"><div class="num ${d.nextLeft<0?'neg':''}">${fmt(d.nextLeft)}</div><div class="lbl">Stock left (${monthLabel(latest.month)})</div></div>
+    <div class="card accent"><div class="num">${fmt(d.issuedAmount)}</div><div class="lbl">Issued this month</div></div>
+    <div class="card accent2"><div class="num">${fmt(latest.valid)} / ${fmt(latest.damage)}</div><div class="lbl">Valid / Damaged</div></div>
+  `;
+}
+
+function renderTable(){
+  const body = $('ledger-body');
+  const list = sortedRecords();
+  $('entry-count').textContent = `${list.length} ${list.length===1?'entry':'entries'}`;
+  if(!list.length){
+    body.innerHTML = `<tr class="empty-row"><td colspan="11">No entries yet. Click "+ New entry" to start the register.</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(r=>{
+    const d = derive(r);
+    return `<tr>
+      <td class="month-cell">${monthLabel(r.month)}</td>
+      <td class="grp-divider">${fmt(d.lastFrom)}</td><td>${fmt(d.lastTo)}</td><td>${fmt(d.lastLeft)}</td>
+      <td class="grp-divider">${fmt(d.thisFrom)}</td><td>${fmt(d.thisTo)}</td><td>${fmt(d.issuedAmount)}</td>
+      <td class="grp-divider">${fmt(d.nextFrom)}</td><td>${fmt(d.nextTo)}</td><td class="${d.nextLeft<0?'neg':''}">${fmt(d.nextLeft)}</td>
+      <td class="actions-cell grp-divider">
+        <button class="small" style="border-color: var(--brass); color: var(--brass);" onclick="generateWordDocument('${r.id}')">Doc</button>
+        <button class="small" onclick="openEdit('${r.id}')">Edit</button>
+        <button class="small danger-outline" onclick="deleteRecord('${r.id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderSummary();
+  renderTable();
+}
+
+/* ---------- modal / form ---------- */
+function openNew(){
+  editingId = null;
+  $('modal-title').textContent = 'New month entry';
+  $('form-err').textContent = '';
+  $('btn-doc').style.display = 'none';
+  const list = sortedRecords();
+  const prev = list[list.length-1];
+  $('f-month').value = '';
+  $('f-ceiling').value = prev ? prev.ceiling : '';
+  $('f-entering').value = prev ? derive(prev).nextFrom : '';
+  $('f-valid').value = '';
+  $('f-damage').value = '';
+  $('f-damage-numbers').value = '';
+  updatePreview();
+  $('overlay').classList.add('open');
+  $('f-month').focus();
+}
+
+window.openEdit = function(id){
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  $('modal-title').textContent = `Edit ${monthLabel(r.month)}`;
+  $('form-err').textContent = '';
+  $('btn-doc').style.display = 'inline-block';
+  $('f-month').value = r.month;
+  $('f-ceiling').value = r.ceiling;
+  $('f-entering').value = r.entering;
+  $('f-valid').value = r.valid;
+  $('f-damage').value = r.damage;
+  $('f-damage-numbers').value = r.damageNumbers || '';
+  updatePreview();
+  $('overlay').classList.add('open');
+};
+
+$('btn-doc').addEventListener('click', () => {
+  if (editingId) generateWordDocument(editingId);
+});
+
+window.deleteRecord = function(id){
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  if(!confirm(`Delete the ${monthLabel(r.month)} entry? This can't be undone.`)) return;
+  records = records.filter(x=>x.id!==id);
+  writeToFile();
+  renderAll();
+  toast('Entry deleted');
+};
+
+function closeModal(){ $('overlay').classList.remove('open'); }
+
+$('btn-new').addEventListener('click', openNew);
+$('btn-cancel').addEventListener('click', closeModal);
+$('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+
+function updatePreview(){
+  const ceiling = Number($('f-ceiling').value);
+  const entering = Number($('f-entering').value);
+  const valid = Number($('f-valid').value)||0;
+  const damage = Number($('f-damage').value)||0;
+  const preview = $('calc-preview');
+  if(!ceiling || !entering){
+    preview.innerHTML = 'Fill in the ceiling and entering serial number to see the calculated ranges.';
+    return;
+  }
+  const issuedAmount = valid+damage;
+  const thisFrom = entering, thisTo = entering+issuedAmount-1;
+  const nextFrom = thisTo+1, nextTo = ceiling, nextLeft = nextTo-nextFrom+1;
+  const lastLeft = ceiling-entering+1;
+  preview.innerHTML = `
+    <b>Last month</b> — from ${fmt(entering)} to ${fmt(ceiling)}, stock left ${fmt(lastLeft)}<br>
+    <b>This month</b> — from ${fmt(thisFrom)} to ${fmt(thisTo)}, issued ${fmt(issuedAmount)}<br>
+    <b>Next month</b> — from ${fmt(nextFrom)} to ${fmt(nextTo)}, stock left <span class="${nextLeft<0?'neg':''}">${fmt(nextLeft)}</span>`;
+}
+['f-ceiling','f-entering','f-valid','f-damage'].forEach(id=>{
+  $(id).addEventListener('input', updatePreview);
+});
+
+$('btn-save').addEventListener('click', async ()=>{
+  const month = $('f-month').value;
+  const ceiling = Number($('f-ceiling').value);
+  const entering = Number($('f-entering').value);
+  const valid = Number($('f-valid').value);
+  const damage = Number($('f-damage').value);
+  const damageNumbers = $('f-damage-numbers').value.trim();
+  const err = $('form-err');
+
+  if(!month){ err.textContent = 'Choose a month.'; return; }
+  if(!ceiling || ceiling<=0){ err.textContent = 'Enter a valid stock ceiling serial number.'; return; }
+  if(!entering || entering<=0){ err.textContent = 'Enter the entering serial number from last month.'; return; }
+  if(Number.isNaN(valid) || valid<0 || Number.isNaN(damage) || damage<0){ err.textContent = 'Issued valid/damaged counts must be zero or more.'; return; }
+  if(entering > ceiling){ err.textContent = 'Entering serial number can\u2019t be greater than the stock ceiling.'; return; }
+  const dupe = records.find(r=> r.month===month && r.id!==editingId);
+  if(dupe){ err.textContent = 'An entry for this month already exists — edit it instead.'; return; }
+  err.textContent = '';
+
+  if(editingId){
+    const r = records.find(x=>x.id===editingId);
+    Object.assign(r, {month, ceiling, entering, valid, damage, damageNumbers, updatedAt:Date.now()});
+    toast('Entry updated');
+  } else {
+    records.push({id: crypto.randomUUID(), month, ceiling, entering, valid, damage, damageNumbers, updatedAt:Date.now()});
+    toast('Entry saved');
+  }
+  await writeToFile();
+  renderAll();
+  closeModal();
+});
+
+/* ---------- fallback export / import ---------- */
+function addFallbackControls(){
+  if(supportsFS) return;
+  const exp = document.createElement('button');
+  exp.textContent = 'Export JSON';
+  exp.className = 'ghost';
+  exp.onclick = ()=>{
+    const blob = new Blob([JSON.stringify(records,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'stock-register.json';
+    a.click();
+  };
+  const imp = document.createElement('button');
+  imp.textContent = 'Import JSON';
+  imp.className = 'ghost';
+  const fileInput = document.createElement('input');
+  fileInput.type='file'; fileInput.accept='application/json'; fileInput.style.display='none';
+  fileInput.onchange = async ()=>{
+    const f = fileInput.files[0];
+    if(!f) return;
+    records = JSON.parse(await f.text());
+    localStorage.setItem('stockRegisterRecords', JSON.stringify(records));
+    renderAll();
+    toast('Imported');
+  };
+  imp.onclick = ()=> fileInput.click();
+  const actions = document.querySelector('.header-actions');
+  actions.insertBefore(imp, actions.firstChild);
+  actions.insertBefore(exp, actions.firstChild);
+  actions.appendChild(fileInput);
+  document.getElementById('btn-connect').style.display = 'none';
+}
+
+/* ---------- init ---------- */
+(async function init(){
+  const cached = localStorage.getItem('stockRegisterRecords');
+  if(cached){ try{ records = JSON.parse(cached); }catch(e){ records=[]; } }
+  addFallbackControls();
+  await tryReconnect();
+  renderAll();
+})();
+</script>
+</body>
+</html>
