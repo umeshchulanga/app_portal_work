@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omnibus Transfer Calculator</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --text:#172033;
+      --muted:#667085;
+      --line:#e4e7ec;
+      --accent:#175cd3;
+      --accent2:#0b4a9f;
+      --good:#067647;
+      --warn:#b54708;
+      --danger:#b42318;
+      --soft:#eff4ff;
+      --soft-warn:#fffaeb;
+      --soft-good:#ecfdf3;
+      --shadow:0 8px 28px rgba(16,24,40,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .app{max-width:1220px;margin:0 auto;padding:24px}
+    .hero{
+      background:linear-gradient(135deg,#0f3e78,#175cd3 58%,#3b82f6);
+      color:#fff;border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:20px;
+    }
+    .hero-top{display:flex;gap:18px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+    h1{margin:0 0 8px;font-size:clamp(26px,4vw,40px);line-height:1.08}
+    .hero p{margin:0;max-width:800px;color:#eaf2ff;line-height:1.55}
+    .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:8px 12px;border-radius:999px;font-size:13px;white-space:nowrap}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+    button{
+      border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;font-size:14px;
+    }
+    .btn-primary{background:#fff;color:var(--accent2)}
+    .btn-secondary{background:#eef4ff;color:#1849a9}
+    .btn-ghost{background:#fff;border:1px solid var(--line);color:#344054}
+    .btn-danger{background:#fff1f0;color:var(--danger);border:1px solid #fecdca}
+    button:hover{filter:brightness(.98)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:0 2px 10px rgba(16,24,40,.03)}
+    .span-6{grid-column:span 6}.span-12{grid-column:span 12}.span-7{grid-column:span 7}.span-5{grid-column:span 5}
+    .card h2{font-size:19px;margin:0 0 4px}
+    .card .sub{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.45}
+    .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field.full{grid-column:1/-1}
+    label{font-size:13px;font-weight:700;color:#344054}
+    input,select{
+      width:100%;border:1px solid #d0d5dd;border-radius:10px;padding:10px 11px;background:#fff;color:#101828;font-size:14px;outline:none;
+    }
+    input:focus,select:focus{border-color:#84adff;box-shadow:0 0 0 3px #eff4ff}
+    .help{font-size:12px;color:var(--muted);line-height:1.4}
+    .inline-check{display:flex;align-items:center;gap:9px;margin-top:5px}
+    .inline-check input{width:18px;height:18px}
+    .result-hero{background:linear-gradient(180deg,#f8faff,#eef4ff);border:1px solid #c7d7fe;border-radius:16px;padding:18px;margin-bottom:14px}
+    .result-label{font-size:13px;color:#475467;font-weight:700}
+    .result-value{font-size:34px;font-weight:800;color:#1849a9;margin-top:3px;letter-spacing:-.02em}
+    .result-small{font-size:12px;color:#667085;margin-top:4px}
+    .rows{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;padding:12px 14px;background:#fff;border-bottom:1px solid var(--line)}
+    .row:last-child{border-bottom:0}
+    .row strong{font-size:14px}.row .meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+    .money{font-weight:800;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+    .warn,.info,.success{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-top:12px}
+    .warn{background:var(--soft-warn);border:1px solid #fedf89;color:#7a2e0e}
+    .info{background:var(--soft);border:1px solid #c7d7fe;color:#1849a9}
+    .success{background:var(--soft-good);border:1px solid #abefc6;color:#05603a}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .kpi{padding:12px;background:#f9fafb;border:1px solid var(--line);border-radius:12px}
+    .kpi .v{font-weight:800;font-size:16px;margin-top:4px}.kpi .l{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f9fafb;border:1px dashed #d0d5dd;padding:10px 12px;border-radius:10px;font-size:12px;color:#344054;margin-top:8px;overflow:auto}
+    details{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+    details+details{margin-top:10px}
+    summary{cursor:pointer;font-weight:800;font-size:14px}
+    details p,details li{font-size:13px;color:#475467;line-height:1.55}
+    .footer{color:#667085;font-size:12px;text-align:center;padding:22px 4px 6px}
+    .tiny{font-size:11px;color:#98a2b3}
+    .print-only{display:none}
+    @media(max-width:900px){
+      .span-6,.span-7,.span-5{grid-column:span 12}.fields{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:520px){.app{padding:12px}.hero{padding:20px}.kpis{grid-template-columns:1fr}.result-value{font-size:28px}.row{grid-template-columns:1fr}.money{text-align:left}}
+    @media print{
+      body{background:#fff}.app{max-width:none;padding:0}.hero{background:#fff!important;color:#000;box-shadow:none;border:1px solid #aaa;padding:18px}.hero p{color:#333}.badge,.toolbar,.footer,.no-print{display:none!important}.card{box-shadow:none;break-inside:avoid}.grid{display:block}.card{margin-bottom:12px}.span-6,.span-7,.span-5,.span-12{width:100%}.print-only{display:block}.result-hero{background:#fff}.result-value{color:#000}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <h1>Omnibus Transfer Calculator</h1>
+        <p>Single-page calculator based on the attached eRL 2 manual example for transferring a passenger permit from an existing omnibus to a replacement omnibus.</p>
+      </div>
+      <div class="badge">Static HTML • No backend required</div>
+    </div>
+    <div class="toolbar no-print">
+      <button class="btn-primary" id="loadExample">Load document example</button>
+      <button class="btn-secondary" id="copySummary">Copy calculation</button>
+      <button class="btn-secondary" id="printBtn">Print report</button>
+      <button class="btn-danger" id="resetBtn">Clear</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card span-6">
+      <h2>1. Existing / Previous Bus</h2>
+      <p class="sub">Details of the bus that currently carries the permit.</p>
+      <div class="fields">
+        <div class="field"><label for="oldReg">Registration number</label><input id="oldReg" placeholder="e.g. NA-5389"></div>
+        <div class="field"><label for="oldSeats">Seat count</label><input id="oldSeats" type="number" min="1" step="1" placeholder="42"></div>
+        <div class="field"><label for="oldFirstReg">Original registration date</label><input id="oldFirstReg" type="date"></div>
+        <div class="field"><label for="oldPermitStart">Existing permit start</label><input id="oldPermitStart" type="date"></div>
+        <div class="field"><label for="oldPermitEnd">Existing permit end</label><input id="oldPermitEnd" type="date"></div>
+      </div>
+    </section>
+
+    <section class="card span-6">
+      <h2>2. Replacement / New Bus</h2>
+      <p class="sub">Details of the bus receiving the transferred permit.</p>
+      <div class="fields">
+        <div class="field"><label for="newReg">Registration number</label><input id="newReg" placeholder="e.g. NB-3815"></div>
+        <div class="field"><label for="newSeats">Seat count used for fee</label><input id="newSeats" type="number" min="1" step="1" placeholder="47"></div>
+        <div class="field"><label for="newFirstReg">New bus first registration date</label><input id="newFirstReg" type="date"></div>
+        <div class="field"><label for="applicationDate">Date came to obtain licence</label><input id="applicationDate" type="date"></div>
+        <div class="field"><label for="newPermitStart">New permit start</label><input id="newPermitStart" type="date"></div>
+        <div class="field"><label for="newPermitEnd">New permit end</label><input id="newPermitEnd" type="date"></div>
+        <div class="field full no-print">
+          <button class="btn-ghost" id="setOneYear" type="button">Set new permit period = 365 days</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card span-7">
+      <h2>3. Fee Rules</h2>
+      <p class="sub">Defaults reproduce the formula shown in the manual. Values are editable for future rate changes.</p>
+      <div class="fields">
+        <div class="field"><label for="annualRate">Annual fee per seat (Rs.)</label><input id="annualRate" type="number" min="0" step="0.01" value="450"></div>
+        <div class="field"><label for="penaltyPct">Late penalty (%)</label><input id="penaltyPct" type="number" min="0" step="0.01" value="10"></div>
+        <div class="field"><label for="graceDays">Grace period (days)</label><input id="graceDays" type="number" min="0" step="1" value="7"></div>
+        <div class="field"><label for="applicationFee">Application fee (Rs.)</label><input id="applicationFee" type="number" min="0" step="0.01" value="200"></div>
+        <div class="field"><label for="yearDays">12 months / year basis (days)</label><input id="yearDays" type="number" min="1" step="1" value="365"></div>
+        <div class="field"><label for="overlapDays">Overlap days override</label><input id="overlapDays" type="number" min="0" step="1" placeholder="Auto from dates"></div>
+        <div class="field"><label for="balanceDays">Balance days override</label><input id="balanceDays" type="number" min="0" step="1" placeholder="Auto from dates"></div>
+        <div class="field full">
+          <label class="inline-check"><input type="checkbox" id="includeApplicationFee"> Include the Rs. 200 application fee in final total</label>
+          <div class="help">The manual mentions a Rs. 200 application fee separately, but the worked example total does not add it.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card span-5">
+      <h2>Calculation Result</h2>
+      <p class="sub">Automatically updates when any field changes.</p>
+      <div class="result-hero">
+        <div class="result-label">Total payable</div>
+        <div class="result-value" id="totalPayable">Rs. 0.00</div>
+        <div class="result-small" id="totalNote">Enter the required dates and seat count.</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Late days</div><div class="v" id="lateDaysKpi">0</div></div>
+        <div class="kpi"><div class="l">Penalty</div><div class="v" id="penaltyKpi">No</div></div>
+        <div class="kpi"><div class="l">Overlap</div><div class="v" id="overlapKpi">0 days</div></div>
+        <div class="kpi"><div class="l">Balance</div><div class="v" id="balanceKpi">0 days</div></div>
+      </div>
+      <div id="warnings"></div>
+    </section>
+
+    <section class="card span-12">
+      <h2>4. Fee Breakdown</h2>
+      <p class="sub">The manual example splits the new licence year into the portion overlapping the old permit and the remaining portion after the old permit expires.</p>
+      <div class="rows">
+        <div class="row">
+          <div><strong>Overlap / arrears portion</strong><div class="meta" id="overlapRange">—</div><div class="formula" id="overlapFormula">Rate × seats × chargeable days ÷ 365</div></div>
+          <div class="money" id="overlapFee">Rs. 0.00</div>
+        </div>
+        <div class="row">
+          <div><strong>10% late penalty (when delay is more than the grace period)</strong><div class="meta" id="penaltyMeta">No penalty calculated.</div></div>
+          <div class="money" id="penaltyFee">Rs. 0.00</div>
+        </div>
+        <div class="row">
+          <div><strong>Remaining new-permit portion</strong><div class="meta" id="balanceRange">—</div><div class="formula" id="balanceFormula">Rate × seats × chargeable days ÷ 365</div></div>
+          <div class="money" id="balanceFee">Rs. 0.00</div>
+        </div>
+        <div class="row" id="appFeeRow" style="display:none">
+          <div><strong>Application fee</strong><div class="meta">Included only because the checkbox above is selected.</div></div>
+          <div class="money" id="appFeeValue">Rs. 0.00</div>
+        </div>
+        <div class="row">
+          <div><strong>Grand total</strong><div class="meta">Calculated from the line items above.</div></div>
+          <div class="money" id="grandTotal">Rs. 0.00</div>
+        </div>
+      </div>
+      <div id="exampleMismatch" class="warn" style="display:none"></div>
+    </section>
+
+    <section class="card span-12">
+      <h2>Manual Rules Implemented</h2>
+      <p class="sub">These are the rules that can be read directly from the attached worked example.</p>
+      <details open>
+        <summary>Core formula</summary>
+        <p>This version calculates by actual calendar dates. It uses <strong>annual rate × new-bus seat count × chargeable days ÷ 365</strong>, treating 12 months as 365 days. Start and end dates are counted inclusively.</p>
+      </details>
+      <details>
+        <summary>Late penalty</summary>
+        <p>The example applies a 10% penalty because the licence was obtained more than 7 days after the new bus's first-registration/start date. This calculator applies the penalty only to the overlap/arrears portion, matching the example.</p>
+      </details>
+      <details>
+        <summary>30-day manual check</summary>
+        <p>The source page also refers to a 30-day condition. Because the wording is procedural rather than a clearly shown arithmetic formula, this app does not invent an extra charge. Instead, it displays a manual-review warning when the remaining overlap is under 30 days.</p>
+      </details>
+      <details>
+        <summary>Important arithmetic note</summary>
+        <p>The photographed example calculates in whole months. This updated calculator intentionally uses exact date ranges with a 365-day annual basis, so the result can differ from the printed monthly example.</p>
+      </details>
+    </section>
+  </div>
+
+  <div class="footer">Runs entirely in your browser. Your last values are saved locally in this browser only.</div>
+</div>
+
+<script>
+(() => {
+  const ids = [
+    'oldReg','oldSeats','oldFirstReg','oldPermitStart','oldPermitEnd',
+    'newReg','newSeats','newFirstReg','applicationDate','newPermitStart','newPermitEnd',
+    'annualRate','penaltyPct','graceDays','applicationFee','yearDays','overlapDays','balanceDays','includeApplicationFee'
+  ];
+
+  const $ = id => document.getElementById(id);
+  const DAY = 86400000;
+
+  function utcDate(value){
+    if(!value) return null;
+    const [y,m,d] = value.split('-').map(Number);
+    if(!y || !m || !d) return null;
+    return new Date(Date.UTC(y,m-1,d));
+  }
+  function toInputDate(date){
+    if(!date || isNaN(date)) return '';
+    return date.toISOString().slice(0,10);
+  }
+  function addDays(date, days){ return new Date(date.getTime() + days*DAY); }
+  function maxDate(a,b){ return (!a||!b)?null:(a>b?a:b); }
+  function minDate(a,b){ return (!a||!b)?null:(a<b?a:b); }
+  function dateDiffDays(a,b){ return Math.round((b-a)/DAY); }
+  function inclusiveDays(a,b){ return a&&b&&b>=a ? dateDiffDays(a,b)+1 : 0; }
+  function fmtDate(d){
+    if(!d) return '—';
+    return `${String(d.getUTCFullYear()).padStart(4,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  }
+  function money(n){
+    if(!Number.isFinite(n)) n=0;
+    return 'Rs. ' + n.toLocaleString('en-LK',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function num(id, fallback=0){
+    const v=parseFloat($(id).value);
+    return Number.isFinite(v)?v:fallback;
+  }
+  function round2(n){ return Math.round((n+Number.EPSILON)*100)/100; }
+
+  function setOneYearEnd(){
+    const start=utcDate($('newPermitStart').value);
+    if(!start) return;
+    const yearDays=Math.max(1,Math.round(num('yearDays',365)));
+    $('newPermitEnd').value=toInputDate(addDays(start,yearDays-1));
+    calculate();
+  }
+
+  function getState(){
+    const out={};
+    ids.forEach(id=> out[id]=$(id).type==='checkbox'?$(id).checked:$(id).value);
+    return out;
+  }
+  function saveState(){
+    try{ localStorage.setItem('omnibusTransferCalculatorState_v2_days',JSON.stringify(getState())); }catch(e){}
+  }
+  function loadState(){
+    try{
+      const raw=localStorage.getItem('omnibusTransferCalculatorState_v2_days');
+      if(!raw) return false;
+      const s=JSON.parse(raw);
+      ids.forEach(id=>{
+        if(!(id in s)) return;
+        if($(id).type==='checkbox') $(id).checked=!!s[id]; else $(id).value=s[id];
+      });
+      return true;
+    }catch(e){return false;}
+  }
+
+  function isDocumentExample(){
+    return $('oldReg').value.trim().toUpperCase()==='NA-5389' &&
+      $('newReg').value.trim().toUpperCase()==='NB-3815' &&
+      num('oldSeats')===42 && num('newSeats')===47 &&
+      $('oldPermitStart').value==='2022-12-12' && $('oldPermitEnd').value==='2023-12-11' &&
+      $('newPermitStart').value==='2023-06-12' && $('newPermitEnd').value==='2024-06-11' &&
+      $('newFirstReg').value==='2023-06-12' && $('applicationDate').value==='2023-06-22' &&
+      num('annualRate')===450 && num('penaltyPct')===10 && num('graceDays')===7 && num('yearDays')===365;
+  }
+
+  function calculate(){
+    const oldStart=utcDate($('oldPermitStart').value);
+    const oldEnd=utcDate($('oldPermitEnd').value);
+    const newStart=utcDate($('newPermitStart').value);
+    const newEnd=utcDate($('newPermitEnd').value);
+    const firstReg=utcDate($('newFirstReg').value);
+    const application=utcDate($('applicationDate').value);
+    const seats=num('newSeats');
+    const rate=num('annualRate',450);
+    const penaltyPct=num('penaltyPct',10);
+    const graceDays=num('graceDays',7);
+    const yearDays=Math.max(1,Math.round(num('yearDays',365)));
+
+    let overlapStart=null, overlapEnd=null, autoOverlapDays=0;
+    if(oldStart && oldEnd && newStart && newEnd){
+      overlapStart=maxDate(oldStart,newStart);
+      overlapEnd=minDate(oldEnd,newEnd);
+      if(overlapStart>overlapEnd){overlapStart=null;overlapEnd=null;}
+      autoOverlapDays=inclusiveDays(overlapStart,overlapEnd);
+    }
+
+    let balanceStart=null, balanceEnd=null, autoBalanceDays=0;
+    if(oldEnd && newStart && newEnd){
+      balanceStart=maxDate(newStart,addDays(oldEnd,1));
+      balanceEnd=newEnd;
+      if(balanceStart>balanceEnd){balanceStart=null;balanceEnd=null;}
+      autoBalanceDays=inclusiveDays(balanceStart,balanceEnd);
+    }
+
+    const overlapOverride=parseFloat($('overlapDays').value);
+    const balanceOverride=parseFloat($('balanceDays').value);
+    const overlapDays=Number.isFinite(overlapOverride)?Math.max(0,Math.round(overlapOverride)):autoOverlapDays;
+    const balanceDays=Number.isFinite(balanceOverride)?Math.max(0,Math.round(balanceOverride)):autoBalanceDays;
+
+    const overlapFee=round2(rate*seats*overlapDays/yearDays);
+    const balanceFee=round2(rate*seats*balanceDays/yearDays);
+
+    let lateDays=0;
+    if(firstReg && application) lateDays=Math.max(0,dateDiffDays(firstReg,application));
+    const penaltyApplies=!!(firstReg && application && lateDays>graceDays);
+    const penaltyFee=penaltyApplies?round2(overlapFee*penaltyPct/100):0;
+    const appFee=$('includeApplicationFee').checked?num('applicationFee',200):0;
+    const total=round2(overlapFee+penaltyFee+balanceFee+appFee);
+
+    $('overlapRange').textContent = overlapStart ? `${fmtDate(overlapStart)} to ${fmtDate(overlapEnd)} • ${overlapDays} day(s)${Number.isFinite(overlapOverride)?' (manual override)':''}` : 'No overlap with the existing permit period.';
+    $('balanceRange').textContent = balanceStart ? `${fmtDate(balanceStart)} to ${fmtDate(balanceEnd)} • ${balanceDays} day(s)${Number.isFinite(balanceOverride)?' (manual override)':''}` : 'No balance period after the previous permit expires.';
+    $('overlapFormula').textContent = `${rate.toFixed(2)} × ${seats||0} × ${overlapDays} ÷ ${yearDays}`;
+    $('balanceFormula').textContent = `${rate.toFixed(2)} × ${seats||0} × ${balanceDays} ÷ ${yearDays}`;
+    $('overlapFee').textContent=money(overlapFee);
+    $('penaltyFee').textContent=money(penaltyFee);
+    $('balanceFee').textContent=money(balanceFee);
+    $('appFeeValue').textContent=money(appFee);
+    $('appFeeRow').style.display=$('includeApplicationFee').checked?'grid':'none';
+    $('grandTotal').textContent=money(total);
+    $('totalPayable').textContent=money(total);
+    $('lateDaysKpi').textContent=String(lateDays);
+    $('penaltyKpi').textContent=penaltyApplies?`${penaltyPct}%`:'No';
+    $('overlapKpi').textContent=`${overlapDays} days`;
+    $('balanceKpi').textContent=`${balanceDays} days`;
+    $('penaltyMeta').textContent = firstReg && application
+      ? `${lateDays} day(s) between first registration and licence application; grace period = ${graceDays} day(s). ${penaltyApplies?'Penalty applies.':'No penalty.'}`
+      : 'Enter first registration date and licence application date.';
+    $('totalNote').textContent = seats && newStart && newEnd ? `Calculated for ${seats} seat(s) at Rs. ${rate.toFixed(2)} per seat/year using ${yearDays} days = 12 months.` : 'Enter the required dates and seat count.';
+
+    const warn=[];
+    if(oldStart && oldEnd && oldEnd<oldStart) warn.push('Existing permit end date is before its start date.');
+    if(newStart && newEnd && newEnd<newStart) warn.push('New permit end date is before its start date.');
+    if(firstReg && application && application<firstReg) warn.push('Licence application date is before the new bus first-registration date.');
+    if(newStart && oldEnd){
+      const rem=inclusiveDays(newStart,oldEnd);
+      if(rem>0 && rem<30) warn.push(`Only ${rem} day(s) remain in the previous permit after the transfer start. The manual refers to a 30-day condition; verify this case manually.`);
+    }
+    if(oldStart && newStart && newStart<oldStart) warn.push('New permit starts before the existing permit period; this is outside the photographed example and should be checked manually.');
+    if(num('oldSeats')>0 && seats>0 && seats<num('oldSeats')) warn.push('The replacement bus has fewer seats than the previous bus. The photographed formula still uses the new-bus seat count; confirm whether another rule applies in your office.');
+    if(newStart && newEnd){
+      const fullPermitDays=inclusiveDays(newStart,newEnd);
+      if(fullPermitDays!==yearDays) warn.push(`The selected new permit period contains ${fullPermitDays} calendar day(s). The fee basis is fixed at ${yearDays} days = 12 months, so charges are prorated by actual selected dates.`);
+    }
+    $('warnings').innerHTML = warn.map(x=>`<div class="warn">${x}</div>`).join('');
+
+    const mismatch=$('exampleMismatch');
+    if(isDocumentExample() && !$('includeApplicationFee').checked){
+      mismatch.style.display='block';
+      mismatch.innerHTML=`<strong>Date-based example check:</strong> this version uses actual inclusive day counts divided by ${yearDays}. Therefore its total intentionally differs from the document's whole-month calculation.`;
+    }else mismatch.style.display='none';
+
+    saveState();
+  }
+
+  function loadExample(){
+    const e={
+      oldReg:'NA-5389',oldSeats:'42',oldFirstReg:'2013-12-12',oldPermitStart:'2022-12-12',oldPermitEnd:'2023-12-11',
+      newReg:'NB-3815',newSeats:'47',newFirstReg:'2023-06-12',applicationDate:'2023-06-22',newPermitStart:'2023-06-12',newPermitEnd:'2024-06-11',
+      annualRate:'450',penaltyPct:'10',graceDays:'7',applicationFee:'200',yearDays:'365',overlapDays:'',balanceDays:''
+    };
+    Object.entries(e).forEach(([k,v])=>$(k).value=v);
+    $('includeApplicationFee').checked=false;
+    calculate();
+  }
+
+  function clearAll(){
+    ['oldReg','oldSeats','oldFirstReg','oldPermitStart','oldPermitEnd','newReg','newSeats','newFirstReg','applicationDate','newPermitStart','newPermitEnd','overlapDays','balanceDays'].forEach(id=>$(id).value='');
+    $('annualRate').value='450';$('penaltyPct').value='10';$('graceDays').value='7';$('applicationFee').value='200';$('yearDays').value='365';$('includeApplicationFee').checked=false;
+    try{localStorage.removeItem('omnibusTransferCalculatorState_v2_days')}catch(e){}
+    calculate();
+  }
+
+  function summaryText(){
+    return [
+      'OMNIBUS TRANSFER CALCULATION',
+      `Previous bus: ${$('oldReg').value||'-'} (${num('oldSeats')||0} seats)`,
+      `Previous permit: ${$('oldPermitStart').value||'-'} to ${$('oldPermitEnd').value||'-'}`,
+      `New bus: ${$('newReg').value||'-'} (${num('newSeats')||0} seats)`,
+      `New permit: ${$('newPermitStart').value||'-'} to ${$('newPermitEnd').value||'-'}`,
+      `Application date: ${$('applicationDate').value||'-'}`,
+      `Overlap fee: ${$('overlapFee').textContent}`,
+      `Late penalty: ${$('penaltyFee').textContent}`,
+      `Balance fee: ${$('balanceFee').textContent}`,
+      $('includeApplicationFee').checked?`Application fee: ${$('appFeeValue').textContent}`:null,
+      `TOTAL: ${$('grandTotal').textContent}`
+    ].filter(Boolean).join('\n');
+  }
+
+  ids.forEach(id=>$(id).addEventListener('input',calculate));
+  $('setOneYear').addEventListener('click',setOneYearEnd);
+  $('loadExample').addEventListener('click',loadExample);
+  $('resetBtn').addEventListener('click',()=>{ if(confirm('Clear all entered values?')) clearAll(); });
+  $('printBtn').addEventListener('click',()=>window.print());
+  $('copySummary').addEventListener('click',async()=>{
+    const btn=$('copySummary');
+    try{await navigator.clipboard.writeText(summaryText());btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy calculation',1200)}
+    catch(e){alert(summaryText());}
+  });
+
+  if(!loadState()) calculate(); else calculate();
+})();
+</script>
+</body>
+</html>
