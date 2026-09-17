@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Ownership Transfer System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2" aria-hidden="true"></i>Divisional Secretariat Transfer Portal</a>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <button class="btn btn-outline-warning btn-sm text-white" id="exportBtn">
+                    <i class="fa-solid fa-download me-1" aria-hidden="true"></i> Export Backup JSON
+                </button>
+                <button id="importBtn" class="btn btn-outline-light btn-sm mb-0 text-white">
+                    <i class="fa-solid fa-upload me-1" aria-hidden="true"></i> Import JSON Data (Link Live)
+                </button>
+                <button type="button" id="docxBtn" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-word me-1" aria-hidden="true"></i> Load DOCX Template &amp; Export</button>
+                <input type="file" id="templateFileInput" accept=".docx" hidden>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 mb-5" id="web-ui">
+<!--         <div class="page-heading"><div><p class="eyebrow">VEHICLE ADMINISTRATION</p><h1>Ownership transfers</h1><p class="page-description">Manage transfer records and prepare your document report.</p></div></div> -->
+        <div id="storageStatus" class="storage-status" role="status" aria-live="polite"></div>
+        <div class="row g-4">
+            <div class="col-xl-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fa-solid fa-plus-circle me-1" aria-hidden="true"></i> <span id="formActionTitle">Add New Record Entry</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="recordForm">
+                            <input type="hidden" id="editIndex" value="">
+                            <div class="mb-3">
+                                <label for="vehNo" class="form-label fw-bold">Vehicle Registration Number</label>
+                                <input type="text" class="form-control" id="vehNo" placeholder="e.g., SP JG - 2396" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="transferDate" class="form-label fw-bold">Transfer Date</label>
+                                <input type="date" class="form-control" id="transferDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="vehType" class="form-label fw-bold">Vehicle Type (වාහන වර්ගය / ගාස්තු වර්ගය)</label>
+                                <select class="form-select" id="vehType" required>
+                                    <option value="" disabled selected>වාහන වර්ගය තෝරන්න...</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ownerDetails" class="form-label fw-bold">Owner Name & Address (Sinhala)</label>
+                                <textarea class="form-control" id="ownerDetails" rows="3" placeholder="Name and full local address" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rec1" class="form-label small fw-bold">Receipt No 1</label>
+                                    <input type="text" class="form-control" id="rec1" placeholder="V/25 938623" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="amt1" class="form-label small fw-bold">Amount 1 (LKR)</label>
+                                    <input type="text" class="form-control" id="amt1" placeholder="450.00" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rec2" class="form-label small fw-bold">Receipt No 2 (Optional)</label>
+                                    <input type="text" class="form-control" id="rec2" placeholder="J 793283">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="amt2" class="form-label small fw-bold">Amount 2 (Unit Price Only)</label>
+                                    <input type="text" class="form-control" id="amt2" placeholder="700.00">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" id="cancelEditBtn" class="btn btn-secondary w-50" style="display: none;">
+                                    Cancel Edit
+                                </button>
+                                <button type="submit" id="submitBtn" class="btn btn-success flex-grow-1">
+                                    <i class="fa-solid fa-save me-1" aria-hidden="true"></i> Insert Entry
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-filter me-1" aria-hidden="true"></i> Filter by transfer date</span>
+                        <button class="btn btn-sm btn-light py-0" id="clearFilterBtn">Clear Range</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="filterStartDate" class="form-label text-muted small fw-bold">From Date</label>
+                                <input type="date" class="form-control" id="filterStartDate">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="filterEndDate" class="form-label text-muted small fw-bold">To Date</label>
+                                <input type="date" class="form-control" id="filterEndDate">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-table me-1" aria-hidden="true"></i> Transfer records</span>
+                        <span class="badge bg-primary" id="recordCount">0 Records</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="Transfer records table">
+                            <table class="table table-hover table-striped mb-0 align-middle">
+                                <caption class="visually-hidden">Vehicle ownership transfer records matching the selected dates</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="text-center" style="width: 5%">#</th>
+                                        <th scope="col" style="width: 15%">Vehicle No</th>
+                                        <th scope="col" style="width: 15%">Transfer Date</th>
+                                        <th scope="col" style="width: 15%">Type</th>
+                                        <th scope="col" style="width: 25%">Owner Details</th>
+                                        <th scope="col" style="width: 15%">Receipts & LKR</th>
+                                        <th scope="col" class="text-end" style="width: 10%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.45.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> 
+
+    <script src="assets/defaults.js"></script>
+    <script src="assets/report.js"></script>
+    <script src="assets/app.js"></script>
+</body>
+</html>
